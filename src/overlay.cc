@@ -233,7 +233,7 @@ int main(int argc, char **argv)
 
     y_range(first)->SetTitle(hname->str().c_str());
 
-    if (first->GetMinimum()<0. && 1.<first->GetMaximum())
+    if (first->GetMinimum()<0. && 0.<first->GetMaximum())
       zero.DrawLine(first->GetBinLowEdge(1),0,
                     first->GetBinLowEdge(first->GetNbinsX()+1),0);
 
