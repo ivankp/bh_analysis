@@ -1,0 +1,57 @@
+.* {
+  Class: TH1D;
+  Bins: 100 -500 500;
+}
+
+H_mass {
+  Bins: 25 120 130;
+}
+
+H_pT_\dj(?:_.*)? {
+  Bins: 25 0 250;
+}
+
+.*_y(?:_.*)? {
+  Bins: 50 -4.5 4.5;
+}
+
+.*_deltay(?:_.*)? {
+  Bins: 50 -4.5 4.5;
+}
+
+.*_deltaphi(?:_.*)? {
+  Bins: 50 -6.28319 6.28319;
+}
+
+jets_N_.* {
+  Bins: 3 -0.5 2.5;
+}
+
+jet\d_pT {
+  Bins: 40 0 200;
+}
+
+jet\d_tau {
+  Bins: 50 0 100;
+}
+
+jet\d_mass {
+  Bins: 30 0 15;
+}
+
+H\dj_mass {
+  Bins: 25 0 200;
+}
+
+H\dj_pT(?:_.*)? {
+  Bins: 25 0 75;
+}
+
+pid {
+  Bins: 40 -10 30;
+}
+
+N {
+  Bins: 1 0 1;
+}
+
