@@ -124,7 +124,7 @@ int main(int argc, char** argv)
   // START OPTIONS **************************************************
   vector<string> bh_files, sj_files, wt_files, weights;
   string output_file, css_file, jet_alg;
-  double pt_cut, eta_cut;
+  double jet_pt_cut, jet_eta_cut;
   pair<Long64_t,Long64_t> num_ent {0,0};
   bool counter_newline, quiet;
 
@@ -151,10 +151,10 @@ int main(int argc, char** argv)
        "weight branchs; if skipped:\n"
        "  without --wt: ntuple weight is used\n"
        "  with --wt: all weights from wt files")
-      ("jet-pt-cut", po::value<double>(&pt_cut)->default_value(30.,"30"),
+      ("jet-pt-cut", po::value<double>(&jet_pt_cut)->default_value(30.,"30"),
        "jet pT cut in GeV")
-      ("jet-eta-cut", po::value<double>(&eta_cut)->default_value(4.4,"4.4"),
-       "jet eta cut in GeV")
+      ("jet-eta-cut", po::value<double>(&jet_eta_cut)->default_value(4.4,"4.4"),
+       "jet eta cut")
       ("style,s", po::value<string>(&css_file)
        ->default_value(CONFDIR"/H3j.css","H3j.css"),
        "CSS style file for histogram binning and formating")
@@ -395,7 +395,7 @@ int main(int argc, char** argv)
     // Jet clustering *************************************
     vector<Jet> jets;
     if (sj_given) { // Read jets from SpartyJet ntuple
-      const vector<TLorentzVector> sj_jets = sj_alg->jetsByPt(pt_cut,eta_cut);
+      const vector<TLorentzVector> sj_jets = sj_alg->jetsByPt(jet_pt_cut,jet_eta_cut);
       jets.reserve(sj_jets.size());
       for (auto& jet : sj_jets) {
         jets.emplace_back(jet,H_y,jets.size()<3);
@@ -414,13 +414,13 @@ int main(int argc, char** argv)
 
       // Cluster, sort jets by pT, and apply pT cut
       const vector<fastjet::PseudoJet> fj_jets = sorted_by_pt(
-        fastjet::ClusterSequence(particles, *jet_def).inclusive_jets(pt_cut)
+        fastjet::ClusterSequence(particles, *jet_def).inclusive_jets(jet_pt_cut)
       );
 
       // Apply eta cut
       jets.reserve(fj_jets.size());
       for (auto& jet : fj_jets) {
-        if (abs(jet.eta()) < eta_cut)
+        if (abs(jet.eta()) < jet_eta_cut)
           jets.emplace_back(jet,H_y,jets.size()<3);
       }
     }
