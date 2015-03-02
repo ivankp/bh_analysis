@@ -19,46 +19,77 @@ using namespace std;
 
 // Properties *******************************************************
 
-enum prop_t { kClass, kBins, kLineColor, kLineWidth };
+enum prop_t {
+  kClass,
+  kBins,
+  kFillColor,
+  kFillColorAlpha,
+  kFillStyle,
+  kXLabelColor,
+  kYLabelColor,
+  kXLabelFont,
+  kYLabelFont,
+  kXLabelOffset,
+  kYLabelOffset,
+  kXLabelSize,
+  kYLabelSize,
+  kLineColor,
+  kLineColorAlpha,
+  kLineStyle,
+  kLineWidth,
+  kMarkerColor,
+  kMarkerColorAlpha,
+  kMarkerSize,
+  kMarkerStyle,
+  kMaximum,
+  kMinimum,
+  kOption,
+  kStats,
+  kTickLength,
+  kTitle,
+  kTitleFont,
+  kTitleOffset,
+  kTitleSize,
+  kXTitle,
+  kYTitle,
+  kSumw2
+};
 
-/*
+#define DEFMAKER2(name,type) \
+  pair<prop_t,const prop*> make_prop_##name(const string& str) { \
+    return make_pair(type, new const prop_##name(str)); \
+  }
 
-virtual void	TAttFill::SetFillColor(Color_t fcolor)
-virtual void	TAttFill::SetFillColorAlpha(Color_t fcolor, Float_t falpha)
-virtual void	TAttFill::SetFillStyle(Style_t fstyle)
-virtual void	TH1::SetLabelColor(Color_t color = 1, Option_t* axis = "X")
-virtual void	TH1::SetLabelFont(Style_t font = 62, Option_t* axis = "X")
-virtual void	TH1::SetLabelOffset(Float_t offset = 0.005, Option_t* axis = "X")
-virtual void	TH1::SetLabelSize(Float_t size = 0.02, Option_t* axis = "X")
-virtual void	TAttLine::SetLineColor(Color_t lcolor)
-virtual void	TAttLine::SetLineColorAlpha(Color_t lcolor, Float_t lalpha)
-virtual void	TAttLine::SetLineStyle(Style_t lstyle)
-virtual void	TAttLine::SetLineWidth(Width_t lwidth)
-virtual void	TAttMarker::SetMarkerColor(Color_t mcolor = 1)
-virtual void	TAttMarker::SetMarkerColorAlpha(Color_t mcolor, Float_t malpha)
-virtual void	TAttMarker::SetMarkerSize(Size_t msize = 1)
-virtual void	TAttMarker::SetMarkerStyle(Style_t mstyle = 1)
-virtual void	TH1::SetMaximum(Double_t maximum = -1111)
-virtual void	TH1::SetMinimum(Double_t minimum = -1111)
-virtual void	TH1::SetName(const char* name)MENU
-virtual void	TH1::SetNameTitle(const char* name, const char* title)
-virtual void	TH1::SetNdivisions(Int_t n = 510, Option_t* axis = "X")
-virtual void	TH1::SetNormFactor(Double_t factor = 1)
-virtual void	TH1::SetOption(Option_t* option = " ")
-virtual void	TH1::SetStats(Bool_t stats = kTRUE)
-virtual void	TH1::SetTickLength(Float_t length = 0.02, Option_t* axis = "X")
-virtual void	TH1::SetTitle(const char* title)MENU
-virtual void	TH1::SetTitleFont(Style_t font = 62, Option_t* axis = "X")
-virtual void	TH1::SetTitleOffset(Float_t offset = 1, Option_t* axis = "X")
-virtual void	TH1::SetTitleSize(Float_t size = 0.02, Option_t* axis = "X")
-virtual void	TH1::SetXTitle(const char* title)
-virtual void	TH1::SetYTitle(const char* title)
-
-*/
+#define DEFMAKER(name) DEFMAKER2(name,k##name)
 
 struct prop {
   virtual void apply(TH1* h) const =0;
   virtual ~prop() { }
+};
+
+struct prop_int: public prop {
+  int x;
+  prop_int(const string& str): x( atoi(str.c_str()) ) { }
+  virtual ~prop_int() { }
+  virtual void apply(TH1* h) const =0;
+};
+
+struct prop_string: public prop {
+  string str;
+  prop_string(const string& str): str(str) { }
+  virtual ~prop_string() { }
+  virtual void apply(TH1* h) const =0;
+};
+
+struct prop_bool: public prop {
+  bool b;
+  prop_bool(const string& str) {
+    if (str=="1") b = true;
+    else if (boost::algorithm::to_lower_copy(str)=="true") b = true;
+    else b = false;
+  }
+  virtual ~prop_bool() { }
+  virtual void apply(TH1* h) const =0;
 };
 
 struct prop_Class: public prop {
@@ -68,6 +99,7 @@ struct prop_Class: public prop {
   // this property is used for construction of TH1
   virtual void apply(TH1* h) const { }
 };
+DEFMAKER(Class)
 
 struct prop_Bins: public prop {
   bool isrange;
@@ -84,22 +116,33 @@ struct prop_Bins_range: public prop_Bins {
     ss >> nbinsx >> xlow >> xup;
   }
 };
+DEFMAKER2(Bins_range,kBins)
 
-struct prop_Bins_vals: public prop_Bins {
+struct prop_Bin_edges: public prop_Bins {
   vector<Double_t> xbins;
-  prop_Bins_vals(const string& str): prop_Bins(false) {
-    stringstream ss(str);
+  prop_Bin_edges(const string& str): prop_Bins(false) {
+    stringstream ss( boost::replace_all_copy(str, ",", " ") );
     Double_t bin;
     while(ss >> bin) xbins.push_back(bin);
   }
 };
+DEFMAKER2(Bin_edges,kBins)
 
-struct prop_int: public prop {
-  int x;
-  prop_int(const string& str): x( atoi(str.c_str()) ) { }
-  virtual ~prop_int() { }
-  virtual void apply(TH1* h) const =0;
+struct prop_Title: public prop_string {
+  prop_Title(const string& str): prop_string(str) { }
+  virtual void apply(TH1* h) const {
+    h->SetTitle(str.c_str());
+  }
 };
+DEFMAKER(Title)
+
+struct prop_Sumw2: public prop_bool {
+  prop_Sumw2(const string& str): prop_bool(str) { }
+  virtual void apply(TH1* h) const {
+    h->Sumw2(b);
+  }
+};
+DEFMAKER(Sumw2)
 
 struct prop_LineColor: public prop_int {
   prop_LineColor(const string& str): prop_int(str) { }
@@ -107,6 +150,7 @@ struct prop_LineColor: public prop_int {
     h->SetLineColor(x);
   }
 };
+DEFMAKER(LineColor)
 
 struct prop_LineWidth: public prop_int {
   prop_LineWidth(const string& str): prop_int(str) { }
@@ -114,45 +158,117 @@ struct prop_LineWidth: public prop_int {
     h->SetLineWidth(x);
   }
 };
+DEFMAKER(LineWidth)
 
-pair<prop_t,const prop*> mkprop(const string& str) {
-  prop_t type;
-  const prop* p;
+/*
 
-  size_t sep = str.find_first_of(":");
-  pair<string,string> ps(
-    boost::algorithm::trim_copy(str.substr(0,sep)),
-    boost::algorithm::trim_copy(str.substr(sep+1))
-  );
+virtual void	TAttFill::SetFillColor(Color_t fcolor)
+virtual void	TAttFill::SetFillColorAlpha(Color_t fcolor, Float_t falpha)
+virtual void	TAttFill::SetFillStyle(Style_t fstyle)
+virtual void	TH1::SetLabelColor(Color_t color = 1, Option_t* axis = "X")
+virtual void	TH1::SetLabelFont(Style_t font = 62, Option_t* axis = "X")
+virtual void	TH1::SetLabelOffset(Float_t offset = 0.005, Option_t* axis = "X")
+virtual void	TH1::SetLabelSize(Float_t size = 0.02, Option_t* axis = "X")
+virtual void	TAttLine::SetLineColorAlpha(Color_t lcolor, Float_t lalpha)
+virtual void	TAttLine::SetLineStyle(Style_t lstyle)
+virtual void	TAttMarker::SetMarkerColor(Color_t mcolor = 1)
+virtual void	TAttMarker::SetMarkerColorAlpha(Color_t mcolor, Float_t malpha)
+virtual void	TAttMarker::SetMarkerSize(Size_t msize = 1)
+virtual void	TAttMarker::SetMarkerStyle(Style_t mstyle = 1)
+virtual void	TH1::SetMaximum(Double_t maximum = -1111)
+virtual void	TH1::SetMinimum(Double_t minimum = -1111)
+virtual void	TH1::SetOption(Option_t* option = " ")
+virtual void	TH1::SetStats(Bool_t stats = kTRUE)
+virtual void	TH1::SetTickLength(Float_t length = 0.02, Option_t* axis = "X")
+virtual void	TH1::SetTitleFont(Style_t font = 62, Option_t* axis = "X")
+virtual void	TH1::SetTitleOffset(Float_t offset = 1, Option_t* axis = "X")
+virtual void	TH1::SetTitleSize(Float_t size = 0.02, Option_t* axis = "X")
+virtual void	TH1::SetXTitle(const char* title)
+virtual void	TH1::SetYTitle(const char* title)
 
-  if (!ps.first.compare("Class")) {
-    type = kClass;
-    p = new const prop_Class(ps.second);
-  } else if (!ps.first.compare("Bins")) {
-    type = kBins;
-    p = new const prop_Bins_range(ps.second);
-  } else if (!ps.first.compare("Bins*")) {
-    type = kBins;
-    p = new const prop_Bins_vals(ps.second);
-  } else if (!ps.first.compare("LineColor")) {
-    type = kLineColor;
-    p = new const prop_LineColor(ps.second);
-  } else if (!ps.first.compare("LineWidth")) {
-    type = kLineWidth;
-    p = new const prop_LineWidth(ps.second);
-  } else throw runtime_error(
-    "undefined property "+ps.first
-  );
+*/
 
-  return make_pair(type,p);
-}
+// Map strings to property makers ***********************************
 
-typedef boost::unordered_map<prop_t, const prop*> prop_map;
+#define add_prop_type2(str,name) \
+  _map.insert(make_pair(str, &make_prop_##name));
+
+#define add_prop_type(name) add_prop_type2(#name,name)
+
+class prop_factory_map {
+  typedef boost::unordered_map< string,
+    pair<prop_t,const prop*> (*)(const string& str) > map_t;
+
+  map_t _map;
+
+public:
+  prop_factory_map() {
+    add_prop_type2("Bins",    Bins_range)
+    add_prop_type2("BinEdges",Bin_edges)
+    add_prop_type(Class)
+    add_prop_type(Title)
+    // add_prop_type(FillColor)
+    // add_prop_type(FillColorAlpha)
+    // add_prop_type(FillStyle)
+    // add_prop_type(XLabelColor)
+    // add_prop_type(YLabelColor)
+    // add_prop_type(XLabelFont)
+    // add_prop_type(YLabelFont)
+    // add_prop_type(XLabelOffset)
+    // add_prop_type(YLabelOffset)
+    // add_prop_type(XLabelSize)
+    // add_prop_type(YLabelSize)
+    add_prop_type(LineColor)
+    // add_prop_type(LineColorAlpha)
+    // add_prop_type(LineStyle)
+    add_prop_type(LineWidth)
+    // add_prop_type(MarkerColor)
+    // add_prop_type(MarkerColorAlpha)
+    // add_prop_type(MarkerSize)
+    // add_prop_type(MarkerStyle)
+    // add_prop_type(Maximum)
+    // add_prop_type(Minimum)
+    // add_prop_type(Option)
+    // add_prop_type(Stats)
+    // add_prop_type(TickLength)
+    // add_prop_type(TitleFont)
+    // add_prop_type(TitleOffset)
+    // add_prop_type(TitleSize)
+    // add_prop_type(XTitle)
+    // add_prop_type(YTitle)
+    add_prop_type(Sumw2)
+  }
+
+  pair<prop_t,const prop*> operator()(const string& str) const {
+    // separate property: value
+    const size_t sep = str.find_first_of(":");
+
+    // get property type and maker function
+    string opt = str.substr(0,sep);
+    boost::algorithm::trim(opt);
+
+    map_t::const_iterator maker = _map.find(opt);
+    if (maker==_map.end()) {
+      throw std::runtime_error("Undefined histogram option: "+opt);
+    }
+
+    // create property object and return with type
+    return maker->second(
+      boost::algorithm::trim_copy( str.substr(sep+1) )
+    );
+  }
+
+} const mk_prop;
 
 // PIMPL ************************************************************
 
 struct csshists::impl {
-  vector< pair<const boost::regex*,prop_map*> > rules;
+
+  typedef boost::unordered_map<prop_t, const prop*> prop_map;
+
+  typedef vector< pair<const boost::regex*,prop_map*> > rules_t;
+  typedef rules_t::iterator iter;
+  rules_t rules;
 
   ~impl() {
     for (size_t i=0,n=rules.size();i<n;++i) {
@@ -165,14 +281,11 @@ struct csshists::impl {
       delete rules[i].second;
     }
   }
-
-  typedef vector< pair<const boost::regex*,prop_map*> >::iterator iter;
 };
 
 // Constructor ******************************************************
 
-csshists::csshists(const string& cssfilename)
-: _impl( new impl )
+csshists::csshists(const string& cssfilename): _impl( new impl )
 {
   // Read CSS file
   ifstream css(cssfilename.c_str());
@@ -237,14 +350,14 @@ csshists::csshists(const string& cssfilename)
 
     _impl->rules.push_back( make_pair(
       new const boost::regex( rule_str[i].first ),
-      new prop_map()
+      new impl::prop_map()
     ) );
     //_impl->rules.back().second.reserve( rule_str[i].second.size() );
     for (size_t j=0,m=rule_str[i].second.size();j<m;++j) {
       const string& prop_str = rule_str[i].second[j];
       if (prop_str.size()==0) continue; // skip blank property
 
-      _impl->rules.back().second->insert( mkprop( prop_str ) );
+      _impl->rules.back().second->insert( mk_prop( prop_str ) );
     }
   }
 
@@ -252,7 +365,7 @@ csshists::csshists(const string& cssfilename)
   // Test print
   //for (size_t i=0,n=_impl->rules.size();i<n;++i) {
   //  cout << _impl->rules[i].first->str() << endl;
-  //  for (prop_map::iterator j=_impl->rules[i].second.begin(),
+  //  for (impl::prop_map::iterator j=_impl->rules[i].second.begin(),
   //       m=_impl->rules[i].second.end();j!=m;++j)
   //    cout << j->first <<' '<< j->second->str << endl;
   //    //cout <<j<<". " << _impl->rules[i].second[j]->str <<';'<< endl;
@@ -263,14 +376,14 @@ csshists::csshists(const string& cssfilename)
 // Make Historgram **************************************************
 
 TH1* csshists::mkhist(const string& name) const {
-  prop_map props;
+  impl::prop_map props;
   TH1* h;
 
   boost::smatch result;
   for (impl::iter it=_impl->rules.begin(),
        end=_impl->rules.end();it!=end;++it) {
     if (boost::regex_match(name, result, *it->first)) {
-      for (prop_map::iterator jt=it->second->begin(),
+      for (impl::prop_map::iterator jt=it->second->begin(),
            end2=it->second->end();jt!=end2;++jt)
         props[jt->first] = jt->second;
     }
@@ -307,8 +420,8 @@ TH1* csshists::mkhist(const string& name) const {
     );
 
   } else {
-    const prop_Bins_vals* b
-      = static_cast<const prop_Bins_vals*>(props[kBins]);
+    const prop_Bin_edges* b
+      = static_cast<const prop_Bin_edges*>(props[kBins]);
 
     if (!class_name.compare("TH1F")) {
       h = new TH1F(name.c_str(),"",b->xbins.size()-1,&b->xbins[0]);
@@ -327,7 +440,7 @@ TH1* csshists::mkhist(const string& name) const {
   props.erase(kClass);
   props.erase(kBins);
 
-  for (prop_map::iterator it=props.begin(),end=props.end();it!=end;++it)
+  for (impl::prop_map::iterator it=props.begin(),end=props.end();it!=end;++it)
     it->second->apply(h);
 
   return h;

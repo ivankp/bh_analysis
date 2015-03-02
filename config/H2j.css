@@ -1,6 +1,7 @@
 .* {
   Class: TH1D;
   Bins: 100 -500 500;
+  Sumw2: false;
 }
 
 H_mass {
