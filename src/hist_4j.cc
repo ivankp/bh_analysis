@@ -428,12 +428,15 @@ int main(int argc, char** argv)
     Double_t    m2_max =    m2_min;
     Double_t dphi2_max = dphi2_min;
     Double_t   dy2_max =   dy2_min;
-
-    for (size_t i=2;i<njets;++i) {
-      for (size_t j=0;j<i;++j) {
-        const Double_t    m2 =                 (jets[i]+jets[j]).M();
-        const Double_t dphi2 = dphi2_[i+j-1] = fabs(phi[i] - phi[j]);
-        const Double_t   dy2 =   dy2_[i+j-1] = fabs(rap[i] - rap[j]);
+    
+    // To flatten traceless triangular matrix:
+    // k = i*(i-1)/2 + j
+    
+    for (size_t i=2,k=1;i<njets;++i) {
+      for (size_t j=0;j<i;++j,++k) {
+        const Double_t    m2 =             (jets[i]+jets[j]).M();
+        const Double_t dphi2 = dphi2_[k] = fabs(phi[i] - phi[j]);
+        const Double_t   dy2 =   dy2_[k] = fabs(rap[i] - rap[j]);
         if (   m2 <    m2_min)    m2_min =    m2;
         if (   m2 >    m2_max)    m2_max =    m2;
         if (dphi2 < dphi2_min) dphi2_min = dphi2;
