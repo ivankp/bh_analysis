@@ -34,16 +34,12 @@ lib/timed_counter.o: lib/%.o: tools/%.cc tools/%.hh
 	@echo -e "Compiling \E[0;49;96m"$@"\E[0;0m"
 	@$(CPP) $(CFLAGS) -c $(filter %.cc,$^) -o $@
 
-lib/csshists.o: lib/%.o: tools/%.cc tools/%.hh
-	@echo -e "Compiling \E[0;49;96m"$@"\E[0;0m"
-	@$(CPP) $(CFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@
-
-lib/hist_range.o: lib/%.o: tools/%.cc tools/%.hh
+lib/csshists.o lib/hist_range.o: lib/%.o: tools/%.cc tools/%.hh
 	@echo -e "Compiling \E[0;49;96m"$@"\E[0;0m"
 	@$(CPP) $(CFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@
 
 # parts #############################################################
-lib/BHEvent.o lib/SJClusterAlg.o lib/weight.o: lib/%.o: parts/%.cc parts/%.hh
+lib/BHEvent.o lib/SJClusterAlg.o lib/weight.o lib/hist_wt.o: lib/%.o: parts/%.cc parts/%.hh
 	@echo -e "Compiling \E[0;49;96m"$@"\E[0;0m"
 	@$(CPP) $(CFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@
 
@@ -98,7 +94,7 @@ lib/overlay.o: tools/propmap.hh tools/hist_range.hh
 
 lib/cross_section_bh.o: parts/BHEvent.hh
 
-$(HIST_OBJ): tools/csshists.hh tools/timed_counter.hh parts/BHEvent.hh parts/SJClusterAlg.hh parts/weight.hh
+$(HIST_OBJ): tools/csshists.hh tools/int_range.hh tools/timed_counter.hh parts/BHEvent.hh parts/SJClusterAlg.hh parts/weight.hh parts/hist_wt.hh parts/fj_jetdef.hh
 
 # EXE dependencies ##################################################
 bin/inspect_bh: lib/BHEvent.o
@@ -111,7 +107,7 @@ bin/overlay: lib/hist_range.o
 
 bin/cross_section_bh: lib/BHEvent.o
 
-$(HIST_EXE): lib/csshists.o lib/timed_counter.o lib/BHEvent.o lib/SJClusterAlg.o lib/weight.o
+$(HIST_EXE): lib/csshists.o lib/timed_counter.o lib/BHEvent.o lib/SJClusterAlg.o lib/weight.o lib/hist_wt.o
 
 clean:
 	rm -rf bin/* lib/*

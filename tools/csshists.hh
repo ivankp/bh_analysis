@@ -1,5 +1,5 @@
-#ifndef kiwi_csshists_h
-#define kiwi_csshists_h
+#ifndef __csshists_hh__
+#define __csshists_hh__
 
 #include <string>
 

@@ -25,8 +25,10 @@
 #include "BHEvent.hh"
 #include "SJClusterAlg.hh"
 #include "weight.hh"
+#include "hist_wt.hh"
+#include "fj_jetdef.hh"
+#include "int_range.hh"
 #include "timed_counter.hh"
-#include "csshists.hh"
 
 #define test(var) \
   cout <<"\033[36m"<< #var <<"\033[0m"<< " = " << var << endl;
@@ -35,66 +37,6 @@ using namespace std;
 namespace po = boost::program_options;
 
 template<typename T> inline T sq(const T x) { return x*x; }
-
-// Histogram wrapper ************************************************
-class hist {
-  unordered_map<const weight*,TH1*> h;
-public:
-  hist(const string& name) {
-    TH1* hist = css->mkhist(name);
-    for (auto& wt : weight::all) {
-      const weight *w = wt.get();
-      dirs[w]->cd();
-      h[w] = static_cast<TH1*>( hist->Clone() );
-    }
-    delete hist;
-  }
-
-  void Fill(Double_t x) noexcept {
-    for (auto& _h : h)
-      _h.second->Fill(x,_h.first->is_float ? _h.first->w.f : _h.first->w.d);
-  }
-
-  static unique_ptr<const csshists> css;
-  static unordered_map<const weight*,TDirectory*> dirs;
-};
-unique_ptr<const csshists> hist::css;
-unordered_map<const weight*,TDirectory*> hist::dirs;
-
-// istream operators ************************************************
-namespace std {
-  template<class A, class B>
-  istream& operator>> (istream& is, pair<A,B>& r) {
-    string str;
-    is >> str;
-    const size_t sep = str.find(':');
-    if (sep==string::npos) {
-      r.first = 0;
-      stringstream(str) >> r.second;
-    } else {
-      stringstream(str.substr(0,sep)) >> r.first;
-      stringstream(str.substr(sep+1)) >> r.second;
-    }
-    return is;
-  }
-}
-
-fastjet::JetDefinition* JetDef(string& str) {
-  string::iterator it = --str.end();
-  while (isdigit(*it)) --it;
-  ++it;
-  string name;
-  transform(str.begin(), it, back_inserter(name), ::tolower);
-  fastjet::JetAlgorithm alg;
-  if (!name.compare("antikt")) alg = fastjet::antikt_algorithm;
-  else if (!name.compare("kt")) alg = fastjet::kt_algorithm;
-  else if (!name.compare("cambridge")) alg = fastjet::cambridge_algorithm;
-  else throw runtime_error("Undefined jet clustering algorithm: "+name);
-  return new fastjet::JetDefinition(
-    alg,
-    atof( string(it,str.end()).c_str() )/10.
-  );
-}
 
 // ******************************************************************
 
@@ -119,13 +61,14 @@ public:
 };
 
 // ******************************************************************
+
 int main(int argc, char** argv)
 {
   // START OPTIONS **************************************************
   vector<string> bh_files, sj_files, wt_files, weights;
   string output_file, css_file, jet_alg;
   double jet_pt_cut, jet_eta_cut;
-  pair<Long64_t,Long64_t> num_ent {0,0};
+  int_range<Long64_t> ents {0,0};
   bool counter_newline, quiet;
 
   bool sj_given = false, wt_given = false;
@@ -158,7 +101,7 @@ int main(int argc, char** argv)
       ("style,s", po::value<string>(&css_file)
        ->default_value(CONFDIR"/H3j.css","H3j.css"),
        "CSS style file for histogram binning and formating")
-      ("num-ent,n", po::value<pair<Long64_t,Long64_t>>(&num_ent),
+      ("num-ent,n", po::value<int_range<Long64_t>>(&ents),
        "process only this many entries,\nnum or first:num")
       ("counter-newline", po::bool_switch(&counter_newline),
        "do not overwrite previous counter message")
@@ -210,8 +153,8 @@ int main(int argc, char** argv)
   cout << endl;
 
   // Find number of entries to process
-  if (num_ent.second>0) {
-    const Long64_t need_ent = num_ent.first + num_ent.second;
+  if (ents.len > 0) {
+    const Long64_t need_ent = ents.end();
     if (need_ent>tree->GetEntries()) {
       cerr << "Fewer entries in BH chain (" << tree->GetEntries()
          << ") then requested (" << need_ent << ')' << endl;
@@ -228,14 +171,14 @@ int main(int argc, char** argv)
       exit(1);
     }
   } else {
-    num_ent.second = tree->GetEntries();
-    if (sj_given) if (num_ent.second!=sj_tree->GetEntries()) {
-      cerr << num_ent.second << " entries in BH chain, but "
+    ents.len = tree->GetEntries();
+    if (sj_given) if (ents.len!=sj_tree->GetEntries()) {
+      cerr << ents.len << " entries in BH chain, but "
            << sj_tree->GetEntries() << " entries in SJ chain" << endl;
       exit(1);
     }
-    if (wt_given) if (num_ent.second!=wt_tree->GetEntries()) {
-      cerr << num_ent.second << " entries in BH chain, but "
+    if (wt_given) if (ents.len!=wt_tree->GetEntries()) {
+      cerr << ents.len << " entries in BH chain, but "
            << wt_tree->GetEntries() << " entries in weights chain" << endl;
       exit(1);
     }
@@ -256,7 +199,7 @@ int main(int argc, char** argv)
   if (sj_given) {
     sj_alg.reset( new SJClusterAlg(tree,jet_alg) );
   } else {
-    jet_def.reset( JetDef(jet_alg) );
+    jet_def.reset( fj_jetdef(jet_alg) );
     cout << "Clustering with " << jet_def->description() << endl << endl;
   }
 
@@ -282,7 +225,8 @@ int main(int argc, char** argv)
 
   // Read CSS file with histogram properties
   cout << "Histogram CSS file: " << css_file << endl;
-  hist::css.reset( new csshists(css_file) );
+  shared_ptr<csshists> hist_css( new csshists(css_file) );
+  hist_wt::css.reset( hist_css.get() );
   cout << endl;
 
   // Open output file with histograms *******************************
@@ -292,14 +236,14 @@ int main(int argc, char** argv)
 
   // Make directories ***********************************************
   for (auto& w : weight::all) {
-    hist::dirs[w.get()] = fout->mkdir((w->name+"_Jet"+jet_alg).c_str());
+    hist_wt::dirs[w.get()] = fout->mkdir((w->name+"_Jet"+jet_alg).c_str());
   }
 
   fout->cd();
 
   // Book histograms ************************************************
-  TH1* h_N   = hist::css->mkhist("N");
-  TH1* h_pid = hist::css->mkhist("pid");
+  TH1* h_N   = hist_css->mkhist("N");
+  TH1* h_pid = hist_css->mkhist("pid");
 
   #define h_(name) h_##name(#name)
 
@@ -314,7 +258,7 @@ int main(int argc, char** argv)
    */
 
   // Book Histograms
-  hist
+  hist_wt
     h_(H_mass),
 
     h_(jets_N_incl), h_(jets_N_excl), h_(jets_N_incl_pT50), h_(jets_N_excl_pT50),
@@ -344,13 +288,12 @@ int main(int argc, char** argv)
   // Reading entries from the input TChain ***************************
   Long64_t num_selected = 0;
   Int_t prev_id = -1;
-  cout << "Reading " << num_ent.second << " entries";
-  if (num_ent.first>0) cout << " starting at " << num_ent.first << endl;
-  else cout << endl;
-  num_ent.second += num_ent.first;
+  cout << "Reading " << ents.len << " entries";
+  if (ents.first>0) cout << " starting at " << ents.first;
+  cout << endl;
   timed_counter counter(counter_newline);
 
-  for (Long64_t ent = num_ent.first; ent < num_ent.second; ++ent) {
+  for (Long64_t ent = ents.first, ent_end = ents.end(); ent < ent_end; ++ent) {
     counter(ent);
     tree->GetEntry(ent);
 
@@ -536,7 +479,7 @@ int main(int argc, char** argv)
 
   } // END of event loop
 
-  counter.prt(num_ent.second);
+  counter.prt(ents.end());
   cout << endl;
   cout << "Selected events: " << num_selected << endl;
 
