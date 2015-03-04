@@ -212,7 +212,7 @@ int main(int argc, char** argv)
   // Read CSS file with histogram properties
   cout << "Histogram CSS file: " << css_file << endl;
   shared_ptr<csshists> hist_css( new csshists(css_file) );
-  hist_wt::css.reset( hist_css.get() );
+  hist_wt::css = hist_css;
   cout << endl;
 
   // Open output file with histograms *******************************
@@ -294,9 +294,8 @@ int main(int argc, char** argv)
     // Count number of events (not entries)
     if (prev_id!=event.eid) {
       h_N->Fill(0.5);
-      ++num_selected;
+      prev_id = event.eid;
     }
-    prev_id = event.eid;
 
     // Fill histograms ***********************************
     for (Int_t i=0;i<event.nparticle;i++) h_pid->Fill(event.kf[i]);
@@ -358,7 +357,9 @@ int main(int argc, char** argv)
       }
     }
     if (minDRij < dR_cut) continue;
-
+    
+    // Increment selected entries
+    ++num_selected;
 
     // Number of jets hists *******************************
     h_jets_N_excl.Fill(this_njets);

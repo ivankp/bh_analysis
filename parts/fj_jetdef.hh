@@ -8,7 +8,7 @@
 #include <fastjet/ClusterSequence.hh>
 
 fastjet::JetDefinition* fj_jetdef(const std::string& str) {
-  std::string::iterator it = --str.end();
+  std::string::const_iterator it = --str.end();
   while (isdigit(*it)) --it;
   ++it;
 
@@ -18,7 +18,7 @@ fastjet::JetDefinition* fj_jetdef(const std::string& str) {
   if (!name.compare("antikt")) alg = fastjet::antikt_algorithm;
   else if (!name.compare("kt")) alg = fastjet::kt_algorithm;
   else if (!name.compare("cambridge")) alg = fastjet::cambridge_algorithm;
-  else throw runtime_error("Undefined jet clustering algorithm: "+name);
+  else throw std::runtime_error("Undefined jet clustering algorithm: "+name);
 
   return new fastjet::JetDefinition(
     alg,

@@ -225,7 +225,7 @@ int main(int argc, char** argv)
   // Read CSS file with histogram properties
   cout << "Histogram CSS file: " << css_file << endl;
   shared_ptr<csshists> hist_css( new csshists(css_file) );
-  hist_wt::css.reset( hist_css.get() );
+  hist_wt::css = hist_css;
   cout << endl;
 
   // Open output file with histograms *******************************
@@ -325,9 +325,8 @@ int main(int argc, char** argv)
     // Count number of events (not entries)
     if (prev_id!=event.eid) {
       h_N->Fill(0.5);
-      ++num_selected;
+      prev_id = event.eid;
     }
-    prev_id = event.eid;
 
     // Higgs 4-vector
     const TLorentzVector higgs(event.px[hi],event.py[hi],event.pz[hi],event.E[hi]);
@@ -335,6 +334,9 @@ int main(int argc, char** argv)
     const Double_t H_mass = higgs.M();        // Higgs Mass
     const Double_t H_pT   = higgs.Pt();       // Higgs Pt
     const Double_t H_y    = higgs.Rapidity(); // Higgs Rapidity
+    
+    // Increment selected entries
+    ++num_selected;
 
     // Fill histograms ***********************************
     for (Int_t i=0;i<event.nparticle;i++) h_pid->Fill(event.kf[i]);
