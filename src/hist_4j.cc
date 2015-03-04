@@ -247,18 +247,30 @@ int main(int argc, char** argv)
 
     h_(jet1_pT), h_(jet2_pT), h_(jet3_pT), h_(jet4_pT),
     h_(4j_HT), h_(2j_HT),
+    h_(2j_HT_250_dy1), h_(2j_HT_400_dy1),h_(2j_HT_550_dy1), h_(2j_HT_700_dy1),
+    h_(2j_HT_250_dy2), h_(2j_HT_400_dy2),h_(2j_HT_550_dy2), h_(2j_HT_700_dy2),
+    h_(2j_HT_250_dy3), h_(2j_HT_400_dy3),h_(2j_HT_550_dy3), h_(2j_HT_700_dy3),
+    h_(2j_HT_250_dy4), h_(2j_HT_400_dy4),h_(2j_HT_550_dy4), h_(2j_HT_700_dy4),
 
-    h_(jet1_y), h_(jet2_y), h_(jet3_y), h_(jet4_y),
+    //h_(jet1_y), h_(jet2_y), h_(jet3_y), h_(jet4_y),
 
     h_(4j_mass),
 
     h_(2j_mass_min),     h_(2j_mass_max),
+    h_(2j_mass_min_500), h_(2j_mass_min_1000), h_(2j_mass_min_1500), h_(2j_mass_min_2000),
 
     h_(2j_deltaphi_min), h_(2j_deltaphi_max),
+    h_(2j_deltaphi_min_400), h_(2j_deltaphi_min_700), h_(2j_deltaphi_min_1000),
+
     h_(2j_deltay_min),   h_(2j_deltay_max),
+    h_(2j_deltay_min_400), h_(2j_deltay_min_700), h_(2j_deltay_min_1000),
+    h_(2j_deltay_max_250), h_(2j_deltay_max_400), h_(2j_deltay_max_550), h_(2j_deltay_max_700),
 
     h_(3j_deltaphi_min), h_(3j_deltaphi_max),
-    h_(3j_deltay_min),   h_(3j_deltay_max)
+    h_(3j_deltaphi_min_400), h_(3j_deltaphi_min_700), h_(3j_deltaphi_min_1000),
+
+    h_(3j_deltay_min),   h_(3j_deltay_max),
+    h_(3j_deltay_min_400), h_(3j_deltay_min_700), h_(3j_deltay_min_1000)
   ;
 
   // Reading entries from the input TChain ***************************
@@ -291,7 +303,7 @@ int main(int argc, char** argv)
 
     // Jet clustering *************************************
     vector<TLorentzVector> jets;
-    jets.reserve(njets);
+    jets.reserve(njets+1);
     if (sj_given) { // Read jets from SpartyJet ntuple
       jets = sj_alg->jetsByPt(pt_cut4,eta_cut);
 
@@ -309,9 +321,9 @@ int main(int argc, char** argv)
       const vector<fastjet::PseudoJet> fj_jets =
         fastjet::ClusterSequence(particles, *jet_def).inclusive_jets(pt_cut4);
 
-      // Apply pT cut & convert to TLorentzVector
+      // Convert to TLorentzVector and apply rapidity cut
       for (auto& j : fj_jets) {
-        if (j.pt() < pt_cut4) continue;
+        if (j.eta() > eta_cut) continue;
         jets.emplace_back(j.px(),j.py(),j.pz(),j.E());
       }
 
@@ -325,20 +337,39 @@ int main(int argc, char** argv)
 
     // ****************************************************
 
+    // Require there be at least 4 jets
+    if (this_njets < njets) continue;
+
     // pT cut on the first jet
-    if (this_njets) if (jets.front().Pt()<pt_cut1) continue;
+    if (jets.front().Pt()<pt_cut1) continue;
+    // The cut on the 4th jet is effectively already applied above
+    // by fastjet::ClusterSequence::inclusive_jets(pt_cut4);
+    // if (jets[3].Pt()<pt_cut4) continue;
+
+    // Get the minimum dR between two jets
+    double minDRij = 999;
+    double dRij = 0;
+    for (unsigned int iJet=0; iJet<njets; ++iJet){
+      for (unsigned int jJet=iJet+1; jJet<njets; ++jJet){
+        dRij = fabs(jets[iJet].DeltaR(jets[jJet]));
+        if (dRij < minDRij){
+          minDRij = dRij;
+        }
+      }
+    }
+    if (minDRij < dR_cut) continue;
+
 
     // Number of jets hists *******************************
     h_jets_N_excl.Fill(this_njets);
     for (unsigned i=0;i<this_njets;++i)
       if (this_njets >= i) h_jets_N_incl.Fill(i);
 
-    if (this_njets < njets) continue;
 
     // Jets pT ********************************************
     static array<double,njets> pT, rap, phi;
     Double_t HT = 0.;
-    for (size_t i=0;i<njets;++i) {
+    for (size_t i=0;i<jets.size();++i) {
       HT += pT[i] = jets[i].Pt();
       rap[i] = jets[i].Rapidity();
       phi[i] = jets[i].Phi();
@@ -350,10 +381,10 @@ int main(int argc, char** argv)
     h_jet3_pT.Fill(pT[2]);
     h_jet4_pT.Fill(pT[3]);
 
-    h_jet1_y.Fill(rap[0]);
-    h_jet2_y.Fill(rap[1]);
-    h_jet3_y.Fill(rap[2]);
-    h_jet4_y.Fill(rap[3]);
+    //h_jet1_y.Fill(rap[0]);
+    //h_jet2_y.Fill(rap[1]);
+    //h_jet3_y.Fill(rap[2]);
+    //h_jet4_y.Fill(rap[3]);
 
     // Sum of all jets ************************************
     const TLorentzVector all4 = jets[0] + jets[1] + jets[2] + jets[3];
@@ -370,10 +401,14 @@ int main(int argc, char** argv)
     Double_t    m2_max =    m2_min;
     Double_t dphi2_max = dphi2_min;
     Double_t   dy2_max =   dy2_min;
-    
+
     // To flatten traceless triangular matrix:
     // k = i*(i-1)/2 + j
-    
+
+    size_t non_central_i=0;
+    size_t non_central_j=1;
+    size_t central_i=0;
+    size_t central_j=1;
     for (size_t i=2,k=1;i<njets;++i) {
       for (size_t j=0;j<i;++j,++k) {
         const Double_t    m2 =             (jets[i]+jets[j]).M();
@@ -384,16 +419,75 @@ int main(int argc, char** argv)
         if (dphi2 < dphi2_min) dphi2_min = dphi2;
         if (dphi2 > dphi2_max) dphi2_max = dphi2;
         if (  dy2 <   dy2_min)   dy2_min =   dy2;
-        if (  dy2 >   dy2_max)   dy2_max =   dy2;
+        if (  dy2 >   dy2_max)   {
+          dy2_max =   dy2;
+          non_central_i = i;
+          non_central_j = j;
+        }
       }
     }
+    // find two central jets
+    for (size_t i=0;i<njets;++i) {
+      if ( i != non_central_i && i != non_central_j) {
+        central_i = i;
+        break;
+      }
+    }
+    for (size_t i=0;i<njets;++i) {
+      if ( i != non_central_i && i != non_central_j && i != central_j) {
+        central_j = i;
+        break;
+      }
+    }
+    double Ht_2j = pT[central_i] + pT[central_j];
 
     h_2j_mass_min    .Fill(   m2_min/m4 );
+    if (m4>500) h_2j_mass_min_500    .Fill( m2_min/m4);
+    if (m4>1000) h_2j_mass_min_1000  .Fill( m2_min/m4);
+    if (m4>1500) h_2j_mass_min_1500  .Fill( m2_min/m4);
+    if (m4>2000) h_2j_mass_min_2000  .Fill( m2_min/m4);
     h_2j_mass_max    .Fill(   m2_max/m4 );
     h_2j_deltaphi_min.Fill(dphi2_min);
     h_2j_deltaphi_max.Fill(dphi2_max);
     h_2j_deltay_min  .Fill(  dy2_min);
     h_2j_deltay_max  .Fill(  dy2_max);
+    h_2j_HT           .Fill(  Ht_2j  );
+    if (pT[0] > 250) {
+      h_2j_deltay_max_250             .Fill(  dy2_max);
+      if (dy2_max > 1) h_2j_HT_250_dy1.Fill(  Ht_2j  );
+      if (dy2_max > 2) h_2j_HT_250_dy2.Fill(  Ht_2j  );
+      if (dy2_max > 3) h_2j_HT_250_dy3.Fill(  Ht_2j  );
+      if (dy2_max > 4) h_2j_HT_250_dy4.Fill(  Ht_2j  );
+    }
+    if (pT[0] > 400) {
+      h_2j_deltaphi_min_400.Fill(dphi2_min);
+      h_2j_deltay_min_400  .Fill(  dy2_min);
+      h_2j_deltay_max_400  .Fill(  dy2_max);
+      if (dy2_max > 1) h_2j_HT_400_dy1.Fill(  Ht_2j  );
+      if (dy2_max > 2) h_2j_HT_400_dy2.Fill(  Ht_2j  );
+      if (dy2_max > 3) h_2j_HT_400_dy3.Fill(  Ht_2j  );
+      if (dy2_max > 4) h_2j_HT_400_dy4.Fill(  Ht_2j  );
+    }
+    if (pT[0] > 550) {
+      h_2j_deltay_max_550  .Fill(  dy2_max);
+      if (dy2_max > 1) h_2j_HT_550_dy1.Fill(  Ht_2j  );
+      if (dy2_max > 2) h_2j_HT_550_dy2.Fill(  Ht_2j  );
+      if (dy2_max > 3) h_2j_HT_550_dy3.Fill(  Ht_2j  );
+      if (dy2_max > 4) h_2j_HT_550_dy4.Fill(  Ht_2j  );
+    }
+    if (pT[0] > 700) {
+      h_2j_deltaphi_min_700.Fill(dphi2_min);
+      h_2j_deltay_min_700  .Fill(  dy2_min);
+      h_2j_deltay_max_700  .Fill(  dy2_max);
+      if (dy2_max > 1) h_2j_HT_700_dy1.Fill(  Ht_2j  );
+      if (dy2_max > 2) h_2j_HT_700_dy2.Fill(  Ht_2j  );
+      if (dy2_max > 3) h_2j_HT_700_dy3.Fill(  Ht_2j  );
+      if (dy2_max > 4) h_2j_HT_700_dy4.Fill(  Ht_2j  );
+    }
+    if (pT[0] > 1000) {
+      h_2j_deltaphi_min_1000.Fill(dphi2_min);
+      h_2j_deltay_min_1000  .Fill(  dy2_min);
+    }
 
     // Jet triplets ***************************************
     Double_t dphi3_min = dphi2_[0] + dphi2_[1];
@@ -419,14 +513,26 @@ int main(int argc, char** argv)
     h_3j_deltaphi_max.Fill(dphi3_max);
     h_3j_deltay_min  .Fill(  dy3_min);
     h_3j_deltay_max  .Fill(  dy3_max);
+    if (pT[0] > 400) {
+      h_3j_deltaphi_min_400.Fill(dphi3_min);
+      h_3j_deltay_min_400  .Fill(  dy3_min);
+    }
+    if (pT[0] > 700) {
+      h_3j_deltaphi_min_700.Fill(dphi3_min);
+      h_3j_deltay_min_700  .Fill(  dy3_min);
+    }
+    if (pT[0] > 1000) {
+      h_3j_deltaphi_min_1000.Fill(dphi3_min);
+      h_3j_deltay_min_1000  .Fill(  dy3_min);
+    }
 
-    // Sort by rapidity in ascending order ****************
-    std::sort( jets.begin(), jets.end(),
-      [](const TLorentzVector& i, const TLorentzVector& j)
-        { return fabs(i.Rapidity()) < fabs(j.Rapidity()); }
-    );
+    //// Sort by rapidity in ascending order ****************
+    //std::sort( jets.begin(), jets.end(),
+    //  [](const TLorentzVector& i, const TLorentzVector& j)
+    //    { return fabs(i.Rapidity()) < fabs(j.Rapidity()); }
+    //);
 
-    h_2j_HT.Fill( jets[0].Pt() + jets[1].Pt() );
+    //h_2j_HT.Fill( jets[0].Pt() + jets[1].Pt() );
 
   } // END of event loop
 
