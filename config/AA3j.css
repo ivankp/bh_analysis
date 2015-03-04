@@ -4,11 +4,11 @@
   Sumw2: false;
 }
 
-H_mass {
+AA_mass {
   Bins: 25 120 130;
 }
 
-H_pT_\dj(?:_.*)? {
+AA_pT_\dj(?:_.*)? {
   Bins: 25 0 250;
 }
 
@@ -33,31 +33,27 @@ jet\d_tau {
 }
 
 \dj_mass {
-  Bins: 50 0 500;
+  Bins: 25 0 200;
 }
 
 jet\d_mass {
-  Bins: 25 0 50;
+  Bins: 30 0 30;
 }
 
-H\dj_mass {
-  Bins: 50 100 1000;
+AA\dj_mass {
+  Bins: 25 0 200;
 }
 
 .*_deltaphi(?:_.*)? {
   Bins: 25 -6.28319 6.28319;
 }
 
-H1j_pT(?:_.*)? {
+AA1j_pT(?:_.*)? {
   Bins: 25 0 150;
 }
 
-H2j_pT(?:_.*)? {
-  Bins: 40 0 2;
-}
-
-H3j_pT(?:_.*)? {
-  Bins: 40 0 2;
+AA[23]j_pT(?:_.*)? {
+  Bins: 25 0 0.25;
 }
 
 loose {
@@ -69,7 +65,7 @@ tight {
 }
 
 jets_HT {
-  Bins: 25 0 200;
+  Bins: 25 0 400;
 }
 
 jets_tau_max {

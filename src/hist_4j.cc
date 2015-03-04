@@ -50,7 +50,7 @@ int main(int argc, char** argv)
   vector<string> bh_files, sj_files, wt_files, weights;
   string output_file, css_file, jet_alg;
   double pt_cut1, pt_cut4, eta_cut, dR_cut;
-  int_range<Long64_t> ents {0,0};
+  int_range<Long64_t> ents;
   bool counter_newline, quiet;
 
   bool sj_given = false, wt_given = false;
