@@ -1,6 +1,6 @@
 #include "csshists.hh"
 
-#include <iostream>
+//#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -112,7 +112,7 @@ struct prop_Bins: public prop {
 struct prop_Bins_range: public prop_Bins {
   Double_t nbinsx, xlow, xup;
   prop_Bins_range(const string& str): prop_Bins(true) {
-    stringstream ss(str);
+    stringstream ss( boost::replace_all_copy(str, ",", " ") );
     ss >> nbinsx >> xlow >> xup;
   }
 };

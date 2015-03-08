@@ -67,7 +67,7 @@ int main(int argc, char** argv)
   vector<string> bh_files, sj_files, wt_files, weights;
   string output_file, css_file, jet_alg;
   double jet_pt_cut, jet_eta_cut;
-  int_range<Long64_t> ents {0,0};
+  int_range<Long64_t> ents;
   bool counter_newline, quiet;
 
   bool sj_given = false, wt_given = false;
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
       ("jet-eta-cut", po::value<double>(&jet_eta_cut)->default_value(4.4,"4.4"),
        "jet eta cut")
       ("style,s", po::value<string>(&css_file)
-       ->default_value(CONFDIR"/H2j.css","H2j.css"),
+       ->default_value(CONFDIR"/AA2j.css","AA2j.css"),
        "CSS style file for histogram binning and formating")
       ("num-ent,n", po::value<int_range<Long64_t>>(&ents),
        "process only this many entries,\nnum or first:num")
@@ -225,7 +225,7 @@ int main(int argc, char** argv)
   // Read CSS file with histogram properties
   cout << "Histogram CSS file: " << css_file << endl;
   shared_ptr<csshists> hist_css( new csshists(css_file) );
-  hist_wt::css.reset( hist_css.get() );
+  hist_wt::css = hist_css;
   cout << endl;
 
   // Open output file with histograms *******************************
@@ -258,21 +258,21 @@ int main(int argc, char** argv)
 
   // Book Histograms
   hist_wt
-    h_(H_mass),
+    h_(AA_mass),
 
     h_(jets_N_incl), h_(jets_N_excl), h_(jets_N_incl_pT50), h_(jets_N_excl_pT50),
 
-    h_(H_pT_2j), h_(H_pT_2j_excl),
-    h_(H_pT_1j), h_(H_pT_1j_excl),
-    h_(H_pT_0j), h_(H_pT_0j_excl),
+    h_(AA_pT_2j), h_(AA_pT_2j_excl),
+    h_(AA_pT_1j), h_(AA_pT_1j_excl),
+    h_(AA_pT_0j), h_(AA_pT_0j_excl),
 
 
-    h_(H_y_2j), h_(H_y_2j_excl),
-    h_(H_y_1j), h_(H_y_1j_excl),
-    h_(H_y_0j), h_(H_y_0j_excl),
+    h_(AA_y_2j), h_(AA_y_2j_excl),
+    h_(AA_y_1j), h_(AA_y_1j_excl),
+    h_(AA_y_0j), h_(AA_y_0j_excl),
 
-    h_(H2j_pT), h_(H2j_pT_excl),
-    h_(H1j_pT), h_(H1j_pT_excl),
+    h_(AA2j_pT), h_(AA2j_pT_excl),
+    h_(AA1j_pT), h_(AA1j_pT_excl),
 
     h_(jet1_mass), h_(jet2_mass),
     h_(jet1_pT),   h_(jet2_pT),
@@ -281,10 +281,10 @@ int main(int argc, char** argv)
 
     h_(jets_HT), h_(jets_tau_max), h_(jets_tau_sum),
 
-    h_(H2j_mass),
+    h_(AA2j_mass),
 
-    h_(H_2j_deltaphi), h_(H_2j_deltaphi_excl),
-    h_(H_2j_deltay), h_(H_2j_deltay_excl),
+    h_(AA_2j_deltaphi), h_(AA_2j_deltaphi_excl),
+    h_(AA_2j_deltay), h_(AA_2j_deltay_excl),
 
     h_(2j_mass),
     h_(j_j_deltaphi), h_(j_j_deltaphi_excl), h_(j_j_deltaphi_VBF),
@@ -294,7 +294,7 @@ int main(int argc, char** argv)
   ;
 
   // Reading entries from the input TChain ***************************
-  Long64_t num_selected = 0;
+  Long64_t num_selected = 0, num_events = 0;
   Int_t prev_id = -1;
   cout << "Reading " << ents.len << " entries";
   if (ents.first>0) cout << " starting at " << ents.first;
@@ -315,9 +315,9 @@ int main(int argc, char** argv)
     Int_t Ai1 = -1, Ai2 = -1; // Higgs indices
     for (Int_t i=0; i<event.nparticle; ++i) {
       if (event.kf[i]==22) {
-        if (Ai1==-1) Ai1 = event.kf[i];
+        if (Ai1==-1) Ai1 = i;
         else {
-          if (Ai2==-1) Ai2 = event.kf[i];
+          if (Ai2==-1) Ai2 = i;
           break;
         }
       }
@@ -330,13 +330,13 @@ int main(int argc, char** argv)
     // Count number of events (not entries)
     if (prev_id!=event.eid) {
       h_N->Fill(0.5);
-      ++num_selected;
+      prev_id = event.eid;
+      ++num_events;
     }
-    prev_id = event.eid;
 
     const TLorentzVector A1(event.px[Ai1], event.py[Ai1],
                             event.pz[Ai1], event.E [Ai1]);
-    const TLorentzVector A2(event.px[Ai2], event.py[Ai2],
+    const TLorentzVector A2(event.px[Ai2], event.py[Ai2], 
                             event.pz[Ai2], event.E [Ai2]);
 
     // Photon cuts
@@ -350,23 +350,25 @@ int main(int argc, char** argv)
     if ( A1.Eta() > 2.37 ) continue;
     if ( A2.Eta() > 2.37 ) continue;
 
-
     // Higgs 4-vector
-    const TLorentzVector higgs = A1 + A2;
+    const TLorentzVector AA = A1 + A2;
 
-    const Double_t H_mass = higgs.M();        // Higgs Mass
+    const Double_t AA_mass = AA.M();        // Diphoton Mass
 
-    if ( H_mass < 115 || 135 < H_mass ) continue;
+    if ( AA_mass < 115 || 135 < AA_mass ) continue;
 
-    const Double_t H_pT   = higgs.Pt();       // Higgs Pt
-    const Double_t H_y    = higgs.Rapidity(); // Higgs Rapidity
+    const Double_t AA_pT   = AA.Pt();       // Diphoton Pt
+    const Double_t AA_y    = AA.Rapidity(); // Diphoton Rapidity
+    
+    // Increment selected entries
+    ++num_selected;
 
     // Fill histograms ***********************************
     for (Int_t i=0;i<event.nparticle;i++) h_pid->Fill(event.kf[i]);
 
-    h_H_mass .Fill(H_mass);
-    h_H_pT_0j.Fill(H_pT);
-    h_H_y_0j .Fill(H_y);
+    h_AA_mass .Fill(AA_mass);
+    h_AA_pT_0j.Fill(AA_pT);
+    h_AA_y_0j .Fill(AA_y);
 
     // Jet clustering *************************************
     vector<Jet> jets;
@@ -374,7 +376,7 @@ int main(int argc, char** argv)
       const vector<TLorentzVector> sj_jets = sj_alg->jetsByPt(jet_pt_cut,jet_eta_cut);
       jets.reserve(sj_jets.size());
       for (auto& jet : sj_jets) {
-        jets.emplace_back(jet,H_y,jets.size()<2);
+        jets.emplace_back(jet,AA_y,jets.size()<2);
       }
 
     } else { // Clusted with FastJet on the fly
@@ -398,7 +400,7 @@ int main(int argc, char** argv)
       jets.reserve(fj_jets.size());
       for (auto& jet : fj_jets) {
         if (abs(jet.eta()) < jet_eta_cut)
-          jets.emplace_back(jet,H_y,jets.size()<2);
+          jets.emplace_back(jet,AA_y,jets.size()<2);
       }
     }
     const size_t njets = jets.size(); // number of jets
@@ -423,23 +425,23 @@ int main(int argc, char** argv)
 
     if (njets==0) { // njets == 0; --------------------------------=0
 
-      h_H_pT_0j_excl.Fill(H_pT);
-      h_H_y_0j_excl .Fill(H_y);
+      h_AA_pT_0j_excl.Fill(AA_pT);
+      h_AA_y_0j_excl .Fill(AA_y);
 
     }
     else { // njets > 0; ------------------------------------------>0
 
-      h_H_pT_1j  .Fill(H_pT);
-      h_H_y_1j   .Fill(H_y);
+      h_AA_pT_1j  .Fill(AA_pT);
+      h_AA_y_1j   .Fill(AA_y);
 
       h_jet1_mass.Fill(jets[0].mass);
       h_jet1_pT  .Fill(jets[0].pT);
       h_jet1_y   .Fill(jets[0].y);
       h_jet1_tau .Fill(jets[0].tau);
 
-      const Double_t H1j_pT = (higgs+(*jets[0].p)).Pt();
+      const Double_t AA1j_pT = (AA+(*jets[0].p)).Pt();
 
-      h_H1j_pT   .Fill(H1j_pT);
+      h_AA1j_pT   .Fill(AA1j_pT);
 
       Double_t jets_HT = 0, jets_tau_max = 0, jets_tau_sum = 0;
 
@@ -454,58 +456,58 @@ int main(int argc, char** argv)
 
       if (njets==1) { // njets == 1; ------------------------------=1
 
-        h_H_pT_1j_excl.Fill(H_pT);
-        h_H_y_1j_excl .Fill(H_y);
-        h_H1j_pT_excl .Fill(H1j_pT);
+        h_AA_pT_1j_excl.Fill(AA_pT);
+        h_AA_y_1j_excl .Fill(AA_y);
+        h_AA1j_pT_excl .Fill(AA1j_pT);
 
       }
       else { // njets > 1; ---------------------------------------->1
 
-        h_H_pT_2j  .Fill(H_pT);
-        h_H_y_2j   .Fill(H_y);
+        h_AA_pT_2j .Fill(AA_pT);
+        h_AA_y_2j  .Fill(AA_y);
 
         h_jet2_mass.Fill(jets[1].mass);
         h_jet2_pT  .Fill(jets[1].pT);
         h_jet2_y   .Fill(jets[1].y);
         h_jet2_tau .Fill(jets[1].tau);
 
-        const TLorentzVector jj = (*jets[0].p)+(*jets[1].p);
-        const TLorentzVector H2j = higgs+jj;
+        const TLorentzVector jj   = (*jets[0].p)+(*jets[1].p);
+        const TLorentzVector AA2j = AA + jj;
 
-        const Double_t H2j_mass      = H2j.M();
-        const Double_t H2j_pT        = H2j.Pt();
-        const Double_t H_2j_deltaphi = higgs.Phi() - jj.Phi();
-        const Double_t H_2j_deltay   = H_y - jj.Rapidity();
+        const Double_t AA2j_mass      = AA2j.M();
+        const Double_t AA2j_pT        = AA2j.Pt();
+        const Double_t AA_2j_deltaphi = AA.Phi() - jj.Phi();
+        const Double_t AA_2j_deltay   = AA_y - jj.Rapidity();
 
-        const Double_t jj_mass       = jj.M();
-        const Double_t j_j_deltaphi  = jets[0].p->Phi() - jets[1].p->Phi();
-        const Double_t j_j_deltay    = jets[0].y - jets[1].y;
+        const Double_t jj_mass        = jj.M();
+        const Double_t j_j_deltaphi   = jets[0].p->Phi() - jets[1].p->Phi();
+        const Double_t j_j_deltay     = jets[0].y - jets[1].y;
 
-        h_H2j_mass     .Fill(H2j_mass);
-        h_H2j_pT       .Fill(H2j_pT);
-        h_H_2j_deltaphi.Fill(H_2j_deltaphi);
-        h_H_2j_deltay  .Fill(H_2j_deltay);
-        h_2j_mass      .Fill(jj_mass);
+        h_AA2j_mass     .Fill(AA2j_mass);
+        h_AA2j_pT       .Fill(AA2j_pT);
+        h_AA_2j_deltaphi.Fill(AA_2j_deltaphi);
+        h_AA_2j_deltay  .Fill(AA_2j_deltay);
+        h_2j_mass       .Fill(jj_mass);
 
-        h_j_j_deltaphi .Fill(j_j_deltaphi);
-        h_j_j_deltay   .Fill(j_j_deltay);
+        h_j_j_deltaphi  .Fill(j_j_deltaphi);
+        h_j_j_deltay    .Fill(j_j_deltay);
 
         if (j_j_deltay>2.8) { // VBF cuts
           if (jj_mass>400) {
             h_j_j_deltaphi_VBF.Fill(j_j_deltaphi);
             h_loose.Fill(0.5);
-            if (H_2j_deltaphi>2.6) h_tight.Fill(0.5);
+            if (AA_2j_deltaphi>2.6) h_tight.Fill(0.5);
           }
         }
 
         if (njets==2) { // njets == 2; ----------------------------=2
 
-          h_H_pT_2j_excl      .Fill(H_pT);
-          h_H_y_2j_excl       .Fill(H_y);
-          h_H2j_pT_excl       .Fill(H2j_pT);
-          h_H_2j_deltaphi_excl.Fill(H_2j_deltaphi);
-          h_H_2j_deltay_excl  .Fill(H_2j_deltay);
-          h_j_j_deltaphi_excl .Fill(j_j_deltaphi);
+          h_AA_pT_2j_excl      .Fill(AA_pT);
+          h_AA_y_2j_excl       .Fill(AA_y);
+          h_AA2j_pT_excl       .Fill(AA2j_pT);
+          h_AA_2j_deltaphi_excl.Fill(AA_2j_deltaphi);
+          h_AA_2j_deltay_excl  .Fill(AA_2j_deltay);
+          h_j_j_deltaphi_excl  .Fill(j_j_deltaphi);
 
         }
 
@@ -517,7 +519,8 @@ int main(int argc, char** argv)
 
   counter.prt(ents.end());
   cout << endl;
-  cout << "Selected events: " << num_selected << endl;
+  cout << "Selected entries: " << num_selected << endl;
+  cout << "Processed events: " << num_events << endl;
 
   // Close files
   fout->Write();

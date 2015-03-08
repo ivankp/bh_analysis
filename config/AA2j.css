@@ -4,11 +4,11 @@
   Sumw2: false;
 }
 
-H_mass {
-  Bins: 25 120 130;
+AA_mass {
+  Bins: 100 115 135;
 }
 
-H_pT_\dj(?:_.*)? {
+AA_pT_\dj(?:_.*)? {
   Bins: 25 0 250;
 }
 
@@ -24,11 +24,11 @@ jets_N_.* {
   Bins: 4 -0.5 3.5;
 }
 
-jet\d_pT(?:_.*)? {
+jet\d_pT {
   Bins: 30 0 300;
 }
 
-jet\d_tau(?:_.*)? {
+jet\d_tau {
   Bins: 25 0 150;
 }
 
@@ -36,11 +36,11 @@ jet\d_tau(?:_.*)? {
   Bins: 50 0 500;
 }
 
-jet\d_mass(?:_.*)? {
-  Bins: 25 0 50;
+jet\d_mass {
+  Bins: 25 -1 1;
 }
 
-H\dj_mass {
+AA\dj_mass {
   Bins: 50 100 1000;
 }
 
@@ -48,15 +48,11 @@ H\dj_mass {
   Bins: 25 -6.28319 6.28319;
 }
 
-H1j_pT(?:_.*)? {
+AA1j_pT(?:_.*)? {
   Bins: 25 0 150;
 }
 
-H2j_pT(?:_.*)? {
-  Bins: 40 0 2;
-}
-
-H3j_pT(?:_.*)? {
+AA2j_pT(?:_.*)? {
   Bins: 40 0 2;
 }
 

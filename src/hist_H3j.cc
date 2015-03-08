@@ -68,7 +68,7 @@ int main(int argc, char** argv)
   vector<string> bh_files, sj_files, wt_files, weights;
   string output_file, css_file, jet_alg;
   double jet_pt_cut, jet_eta_cut;
-  int_range<Long64_t> ents {0,0};
+  int_range<Long64_t> ents;
   bool counter_newline, quiet;
 
   bool sj_given = false, wt_given = false;
@@ -226,7 +226,7 @@ int main(int argc, char** argv)
   // Read CSS file with histogram properties
   cout << "Histogram CSS file: " << css_file << endl;
   shared_ptr<csshists> hist_css( new csshists(css_file) );
-  hist_wt::css.reset( hist_css.get() );
+  hist_wt::css = hist_css;
   cout << endl;
 
   // Open output file with histograms *******************************
@@ -286,7 +286,7 @@ int main(int argc, char** argv)
   ;
 
   // Reading entries from the input TChain ***************************
-  Long64_t num_selected = 0;
+  Long64_t num_selected = 0, num_events = 0;
   Int_t prev_id = -1;
   cout << "Reading " << ents.len << " entries";
   if (ents.first>0) cout << " starting at " << ents.first;
@@ -317,9 +317,9 @@ int main(int argc, char** argv)
     // Count number of events (not entries)
     if (prev_id!=event.eid) {
       h_N->Fill(0.5);
-      ++num_selected;
+      prev_id = event.eid;
+      ++num_events;
     }
-    prev_id = event.eid;
 
     // Higgs 4-vector
     const TLorentzVector higgs(event.px[hi],event.py[hi],event.pz[hi],event.E[hi]);
@@ -327,6 +327,9 @@ int main(int argc, char** argv)
     const Double_t H_mass = higgs.M();        // Higgs Mass
     const Double_t H_pT   = higgs.Pt();       // Higgs Pt
     const Double_t H_y    = higgs.Rapidity(); // Higgs Rapidity
+
+    // Increment selected entries
+    ++num_selected;
 
     // Fill histograms ***********************************
     for (Int_t i=0;i<event.nparticle;i++) h_pid->Fill(event.kf[i]);
@@ -481,7 +484,8 @@ int main(int argc, char** argv)
 
   counter.prt(ents.end());
   cout << endl;
-  cout << "Selected events: " << num_selected << endl;
+  cout << "Selected entries: " << num_selected << endl;
+  cout << "Processed events: " << num_events << endl;
 
   // Close files
   fout->Write();
