@@ -39,6 +39,7 @@ namespace po = boost::program_options;
 template<typename T> inline T sq(const T x) { return x*x; }
 
 // ******************************************************************
+
 struct Jet {
 private:
   inline Double_t _tau(Double_t Y) noexcept {
@@ -46,19 +47,20 @@ private:
     return sqrt( pT*pT + mass*mass )/( 2.*cosh(y - Y) );
   }
 public:
-  TLorentzVector p;
+  TLorentzVector *p;
   Double_t mass, pT, y, tau;
-  Jet(const TLorentzVector& p, Double_t Y) noexcept
-  : p(p), mass(p.M()), pT(p.Pt()), y(p.Rapidity()), tau(_tau(Y))
+  Jet(const TLorentzVector& p, Double_t Y, bool keep=false) noexcept
+  : p(keep ? new TLorentzVector(p) : nullptr),
+    mass(p.M()), pT(p.Pt()), y(p.Rapidity()), tau(_tau(Y))
   { }
-  Jet(const fastjet::PseudoJet& p, Double_t Y) noexcept
-  : p(p.px(),p.py(),p.pz(),p.E()),
+  Jet(const fastjet::PseudoJet& p, Double_t Y, bool keep=false) noexcept
+  : p(keep ? new TLorentzVector(p.px(),p.py(),p.pz(),p.E()) : nullptr),
     mass(p.m()), pT(sqrt(p.kt2())), y(p.rapidity()), tau(_tau(Y))
   { }
+  ~Jet() { delete p; }
 };
-// ******************************************************************
 
-#define njets 3
+// ******************************************************************
 
 int main(int argc, char** argv)
 {
@@ -241,6 +243,7 @@ int main(int argc, char** argv)
 
   // Book histograms ************************************************
   TH1* h_N   = hist_css->mkhist("N");
+  TH1* h_pid = hist_css->mkhist("pid");
 
   #define h_(name) h_##name(#name)
 
@@ -256,14 +259,28 @@ int main(int argc, char** argv)
 
   // Book Histograms
   hist_wt
-    h_(H_mass), h_(H_pT), h_(H_y),
+    h_(H_mass),
+
+    h_(jets_N_incl), h_(jets_N_excl), h_(jets_N_incl_pT50), h_(jets_N_excl_pT50),
+
+    h_(H_pT_3j), h_(H_pT_3j_excl),
+    h_(H_pT_2j), h_(H_pT_2j_excl),
+    h_(H_pT_1j), h_(H_pT_1j_excl),
+    h_(H_pT_0j), h_(H_pT_0j_excl),
+
+    h_(H_y_3j), h_(H_y_3j_excl),
+    h_(H_y_2j), h_(H_y_2j_excl),
+    h_(H_y_1j), h_(H_y_1j_excl),
+    h_(H_y_0j), h_(H_y_0j_excl),
+
+    h_(H3j_pT), h_(H3j_pT_excl),
+    h_(H2j_pT), h_(H2j_pT_excl),
+    h_(H1j_pT), h_(H1j_pT_excl),
 
     h_(jet1_mass), h_(jet2_mass), h_(jet3_mass),
     h_(jet1_pT),   h_(jet2_pT),   h_(jet3_pT),
     h_(jet1_y),    h_(jet2_y),    h_(jet3_y),
     h_(jet1_tau),  h_(jet2_tau),  h_(jet3_tau),
-
-    h_(H1j_pT), h_(H2j_pT), h_(H3j_pT),
 
     h_(jets_HT), h_(jets_tau_max), h_(jets_tau_sum)
   ;
@@ -311,15 +328,23 @@ int main(int argc, char** argv)
     const Double_t H_pT   = higgs.Pt();       // Higgs Pt
     const Double_t H_y    = higgs.Rapidity(); // Higgs Rapidity
 
+    // Increment selected entries
+    ++num_selected;
+
+    // Fill histograms ***********************************
+    for (Int_t i=0;i<event.nparticle;i++) h_pid->Fill(event.kf[i]);
+
+    h_H_mass .Fill(H_mass);
+    h_H_pT_0j.Fill(H_pT);
+    h_H_y_0j .Fill(H_y);
+
     // Jet clustering *************************************
     vector<Jet> jets;
-    jets.reserve(njets);
-
     if (sj_given) { // Read jets from SpartyJet ntuple
       const vector<TLorentzVector> sj_jets = sj_alg->jetsByPt(jet_pt_cut,jet_eta_cut);
-      if (sj_jets.size() < njets) continue;
-      for (short i=0;i<njets;++i) {
-        jets.emplace_back(sj_jets[i],H_y);
+      jets.reserve(sj_jets.size());
+      for (auto& jet : sj_jets) {
+        jets.emplace_back(jet,H_y,jets.size()<3);
       }
 
     } else { // Clusted with FastJet on the fly
@@ -337,61 +362,123 @@ int main(int argc, char** argv)
       const vector<fastjet::PseudoJet> fj_jets = sorted_by_pt(
         fastjet::ClusterSequence(particles, *jet_def).inclusive_jets(jet_pt_cut)
       );
-      if (fj_jets.size() < njets) continue;
 
       // Apply eta cut
-      for (short i=0;i<njets;++i) {
-        const auto& jet = fj_jets[i];
+      jets.reserve(fj_jets.size());
+      for (auto& jet : fj_jets) {
         if (abs(jet.eta()) < jet_eta_cut)
-          jets.emplace_back(jet,H_y);
+          jets.emplace_back(jet,H_y,jets.size()<3);
       }
     }
+    const size_t njets = jets.size(); // number of jets
+
     // ****************************************************
 
-    if (jets.size() < njets) continue;
-
-    // Increment selected entries
-    ++num_selected;
-
-    // Fill histograms ************************************
-    h_H_mass   .Fill(H_mass);
-    h_H_pT     .Fill(H_pT);
-    h_H_y      .Fill(H_y);
-
-    h_jet1_mass.Fill(jets[0].mass);
-    h_jet2_mass.Fill(jets[1].mass);
-    h_jet3_mass.Fill(jets[2].mass);
-
-    h_jet1_pT  .Fill(jets[0].pT);
-    h_jet2_pT  .Fill(jets[1].pT);
-    h_jet3_pT  .Fill(jets[2].pT);
-
-    h_jet1_y   .Fill(jets[0].y);
-    h_jet2_y   .Fill(jets[1].y);
-    h_jet3_y   .Fill(jets[2].y);
-
-    h_jet1_tau .Fill(jets[0].tau);
-    h_jet2_tau .Fill(jets[1].tau);
-    h_jet3_tau .Fill(jets[2].tau);
-
-    const TLorentzVector H1j = higgs + jets[0].p;
-    const TLorentzVector H2j = H1j   + jets[1].p;
-    const TLorentzVector H3j = H2j   + jets[2].p;
-
-    h_H1j_pT   .Fill( H1j.Pt() );
-    h_H2j_pT   .Fill( H2j.Pt() );
-    h_H3j_pT   .Fill( H3j.Pt() );
-
-    Double_t jets_HT = 0, jets_tau_max = 0, jets_tau_sum = 0;
-    for (auto& jet : jets) {
-      jets_HT += jet.pT;
-      jets_tau_sum += jet.tau;
-      if (jet.tau > jets_tau_max) jets_tau_max = jet.tau;
+    int njets50 = 0;
+    for (auto& j : jets) {
+      if (j.pT>=50.) ++njets50;
+      else break;
     }
 
-    h_jets_HT.Fill(jets_HT);
-    h_jets_tau_max.Fill(jets_tau_max);
-    h_jets_tau_sum.Fill(jets_tau_sum);
+    // Number of jets hists
+    h_jets_N_excl.Fill(njets);
+    h_jets_N_excl_pT50.Fill(njets50);
+    for (unsigned char i=0;i<4;i++) {
+      if (njets >= i) {
+        h_jets_N_incl.Fill(i);
+        if (njets50 >= i) h_jets_N_incl_pT50.Fill(i);
+      }
+    }
+
+    if (njets==0) { // njets == 0; --------------------------------=0
+
+      h_H_pT_0j_excl.Fill(H_pT);
+      h_H_y_0j_excl .Fill(H_y);
+
+    }
+    else { // njets > 0; ------------------------------------------>0
+
+      h_H_pT_1j  .Fill(H_pT);
+      h_H_y_1j   .Fill(H_y);
+
+      h_jet1_mass.Fill(jets[0].mass);
+      h_jet1_pT  .Fill(jets[0].pT);
+      h_jet1_y   .Fill(jets[0].y);
+      h_jet1_tau .Fill(jets[0].tau);
+
+      const TLorentzVector H1j = higgs+(*jets[0].p);
+      const Double_t H1j_pT = H1j.Pt();
+
+      h_H1j_pT   .Fill(H1j_pT);
+
+      Double_t jets_HT = 0, jets_tau_max = 0, jets_tau_sum = 0;
+
+      for (auto& jet : jets) {
+        jets_HT += jet.pT;
+        jets_tau_sum += jet.tau;
+        if (jet.tau > jets_tau_max) jets_tau_max = jet.tau;
+      }
+      h_jets_HT.Fill(jets_HT);
+      h_jets_tau_max.Fill(jets_tau_max);
+      h_jets_tau_sum.Fill(jets_tau_sum);
+
+      if (njets==1) { // njets == 1; ------------------------------=1
+
+        h_H_pT_1j_excl.Fill(H_pT);
+        h_H_y_1j_excl .Fill(H_y);
+        h_H1j_pT_excl .Fill(H1j_pT);
+
+      }
+      else { // njets > 1; ---------------------------------------->1
+
+        h_H_pT_2j  .Fill(H_pT);
+        h_H_y_2j   .Fill(H_y);
+
+        h_jet2_mass.Fill(jets[1].mass);
+        h_jet2_pT  .Fill(jets[1].pT);
+        h_jet2_y   .Fill(jets[1].y);
+        h_jet2_tau .Fill(jets[1].tau);
+
+        const TLorentzVector H2j = H1j+(*jets[1].p);
+        const Double_t H2j_pT = H2j.Pt();
+
+        h_H2j_pT   .Fill(H2j_pT);
+
+        if (njets==2) { // njets == 2; ----------------------------=2
+
+          h_H_pT_2j_excl.Fill(H_pT);
+          h_H_y_2j_excl .Fill(H_y);
+          h_H2j_pT_excl .Fill(H2j_pT);
+
+        }
+        else { // njets > 2; -------------------------------------->2
+
+          h_H_pT_3j  .Fill(H_pT);
+          h_H_y_3j   .Fill(H_y);
+
+          h_jet3_mass.Fill(jets[2].mass);
+          h_jet3_pT  .Fill(jets[2].pT);
+          h_jet3_y   .Fill(jets[2].y);
+          h_jet3_tau .Fill(jets[2].tau);
+
+          const TLorentzVector H3j = H2j+(*jets[2].p);
+          const Double_t H3j_pT = H3j.Pt();
+
+          h_H3j_pT   .Fill(H3j_pT);
+
+          if (njets==3) { // njets == 3; --------------------------=3
+
+            h_H_pT_3j_excl.Fill(H_pT);
+            h_H_y_3j_excl .Fill(H_y);
+            h_H3j_pT_excl .Fill(H3j_pT);
+
+          }
+
+        } // END njets > 2;
+
+      } // END njets > 1;
+
+    } // END njets > 0;
 
   } // END of event loop
 
