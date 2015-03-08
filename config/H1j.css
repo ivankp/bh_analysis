@@ -28,15 +28,15 @@ jets_N_.* {
   Bins: 3 -0.5 2.5;
 }
 
-jet\d_pT {
+jet\d_pT(?:_.*)? {
   Bins: 40 0 200;
 }
 
-jet\d_tau {
+jet\d_tau(?:_.*)? {
   Bins: 50 0 100;
 }
 
-jet\d_mass {
+jet\d_mass(?:_.*)? {
   Bins: 30 0 15;
 }
 
@@ -55,4 +55,3 @@ pid {
 N {
   Bins: 1 0 1;
 }
-

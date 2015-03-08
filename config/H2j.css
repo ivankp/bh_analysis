@@ -24,11 +24,11 @@ jets_N_.* {
   Bins: 4 -0.5 3.5;
 }
 
-jet\d_pT {
+jet\d_pT(?:_.*)? {
   Bins: 30 0 300;
 }
 
-jet\d_tau {
+jet\d_tau(?:_.*)? {
   Bins: 25 0 150;
 }
 
@@ -36,7 +36,7 @@ jet\d_tau {
   Bins: 25 0 200;
 }
 
-jet\d_mass {
+jet\d_mass(?:_.*)? {
   Bins: 25 0 50;
 }
 
