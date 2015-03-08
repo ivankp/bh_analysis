@@ -1,0 +1,58 @@
+.* {
+  Class: TH1D;
+  Bins: 100 -500 500;
+  Sumw2: false;
+}
+
+.*_y {
+  Bins: 30 -4.5 4.5;
+}
+
+H_mass {
+  Bins: 25 120 130;
+}
+
+H_pT {
+  Bins: 25 0 500;
+}
+
+jet\d_mass {
+  Bins: 20 0 10;
+}
+
+jet\d_pT {
+  Bins: 30 0 300;
+}
+
+jets_HT {
+  Bins: 25 0 500;
+}
+
+H1j_pT {
+  Bins: 30 0 210;
+}
+
+H2j_pT {
+  Bins: 30 0 120;
+}
+
+H3j_pT {
+  Bins: 30 0 30;
+}
+
+jet\d_tau {
+  Bins: 25 0 100;
+}
+
+jets_tau_max {
+  Bins: 25 0 100;
+}
+
+jets_tau_sum {
+  Bins: 25 0 150;
+}
+
+N {
+  Bins: 1 0 1;
+}
+

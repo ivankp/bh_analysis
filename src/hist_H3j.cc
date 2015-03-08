@@ -256,16 +256,18 @@ int main(int argc, char** argv)
 
   // Book Histograms
   hist_wt
-    h_(H_mass), h_(H_pT), h_(H_y),
+    h_(H_pT), h_(H_y), h_(H_mass),
+
+    h_(jet1_pT),   h_(jet2_pT),   h_(jet3_pT),
+    h_(jets_HT),
+    h_(H1j_pT),    h_(H2j_pT),    h_(H3j_pT),
+
+    h_(jet1_y),    h_(jet2_y),    h_(jet3_y),
 
     h_(jet1_mass), h_(jet2_mass), h_(jet3_mass),
-    h_(jet1_pT),   h_(jet2_pT),   h_(jet3_pT),
-    h_(jet1_y),    h_(jet2_y),    h_(jet3_y),
+
     h_(jet1_tau),  h_(jet2_tau),  h_(jet3_tau),
-
-    h_(H1j_pT), h_(H2j_pT), h_(H3j_pT),
-
-    h_(jets_HT), h_(jets_tau_max), h_(jets_tau_sum)
+    h_(jets_tau_max), h_(jets_tau_sum)
   ;
 
   // Reading entries from the input TChain ***************************
