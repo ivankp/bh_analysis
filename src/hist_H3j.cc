@@ -315,13 +315,13 @@ int main(int argc, char** argv)
 
     // Jet clustering *************************************
     vector<Jet> jets;
-    jets.reserve(njets);
+    jets.reserve(njets+1);
 
     if (sj_given) { // Read jets from SpartyJet ntuple
       const vector<TLorentzVector> sj_jets = sj_alg->jetsByPt(jet_pt_cut,jet_eta_cut);
       if (sj_jets.size() < njets) continue;
-      for (short i=0;i<njets;++i) {
-        jets.emplace_back(sj_jets[i],H_y);
+      for (const auto& jet : sj_jets) {
+        jets.emplace_back(jet,H_y);
       }
 
     } else { // Clusted with FastJet on the fly
@@ -342,8 +342,7 @@ int main(int argc, char** argv)
       if (fj_jets.size() < njets) continue;
 
       // Apply eta cut
-      for (short i=0;i<njets;++i) {
-        const auto& jet = fj_jets[i];
+      for (const auto& jet : fj_jets) {
         if (abs(jet.eta()) < jet_eta_cut)
           jets.emplace_back(jet,H_y);
       }
