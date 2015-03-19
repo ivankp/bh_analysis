@@ -1,8 +1,9 @@
-#ifndef __hist_wt_hh__
-#define __hist_wt_hh__
+#ifndef hist_wt_hh
+#define hist_wt_hh
 
 #include <unordered_map>
 #include <string>
+#include <sstream>
 #include <memory>
 
 #include <Rtypes.h>

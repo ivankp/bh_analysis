@@ -3,7 +3,7 @@ CPP := g++
 
 DIRS := lib bin
 
-CFLAGS := -std=c++11 -Wall -O3 -Itools -Iparts
+CFLAGS := -std=c++11 -Wall -g -Itools -Iparts
 
 FJ_DIR    := $(shell fastjet-config --prefix)
 FJ_CFLAGS := -I$(FJ_DIR)/include
@@ -94,7 +94,7 @@ lib/overlay.o: tools/propmap.hh tools/hist_range.hh
 
 lib/cross_section_bh.o: parts/BHEvent.hh
 
-$(HIST_OBJ): tools/csshists.hh tools/int_range.hh tools/timed_counter.hh parts/BHEvent.hh parts/SJClusterAlg.hh parts/weight.hh parts/hist_wt.hh parts/fj_jetdef.hh
+$(HIST_OBJ): tools/csshists.hh tools/int_range.hh tools/timed_counter.hh tools/catstr.hh parts/BHEvent.hh parts/SJClusterAlg.hh parts/weight.hh parts/hist_wt.hh parts/fj_jetdef.hh
 
 # EXE dependencies ##################################################
 bin/inspect_bh: lib/BHEvent.o
