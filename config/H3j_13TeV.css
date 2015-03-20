@@ -4,23 +4,23 @@
   Sumw2: false;
 }
 
-.*_y {
+[^_]*_y(?:_.*)? {
   Bins: 30 -4.5 4.5;
 }
 
-H_mass {
-  Bins: 25 120 130;
+[^_]*_dy(?:_.*)? {
+  Bins: 30 0 9;
 }
 
 H_pT {
   Bins: 25 0 500;
 }
 
-jet\d_mass {
-  Bins: 20 0 10;
+H_mass {
+  Bins: 25 115 135;
 }
 
-jet\d_pT {
+jet\d_pT(?:_.*)? {
   Bins: 30 0 300;
 }
 
@@ -38,6 +38,14 @@ H2j_pT {
 
 H3j_pT {
   Bins: 30 0 30;
+}
+
+H4j_pT {
+  Bins: 30 0 1;
+}
+
+jet\d_mass {
+  Bins: 20 0 10;
 }
 
 jet\d_tau {

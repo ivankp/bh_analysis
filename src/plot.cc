@@ -179,8 +179,9 @@ int main(int argc, char** argv)
       h_var = var::pT;
     } else if (h_name.find("_mass") != string::npos) {
       h_var = var::mass;
-    } else if ( (h_name.find("_deltay") != string::npos) ||
-                (h_name.find("_y") != string::npos) ) {
+    } else if ( (h_name.find("_y") != string::npos) ||
+                (h_name.find("_deltay") != string::npos) ||
+                (h_name.find("_dy") != string::npos) ) {
       h_var = var::y;
     } else if ( (h_name.find("_deltaphi") != string::npos) ||
                 (h_name.find("_phi") != string::npos) ) {
@@ -287,7 +288,7 @@ int main(int argc, char** argv)
     ya->SetTitleOffset(1.3);
     switch (h_var) {
       case var::pT:
-        xa->SetTitle("pT, GeV");
+        xa->SetTitle("p_{T}, GeV");
         ya->SetTitle("d#sigma/dp_{T}, pb/GeV");
         break;
       case var::HT:
@@ -332,7 +333,10 @@ int main(int argc, char** argv)
 
     h_cent->Sumw2(false);
     h_cent->SetLineWidth(2);
-    h_cent->SetLineColor(1);
+    if (draw_scale_unc || draw_pdf_unc)
+      h_cent->SetLineColor(1);
+    else
+      h_cent->SetLineColor(602);
     h_cent->Draw("same");
 
     TLegend leg( draw_pdf_unc ? 0.69 : 0.72, 0.835,0.91,0.89);
@@ -345,7 +349,8 @@ int main(int argc, char** argv)
     if (draw_pdf_unc)   leg.AddEntry(&g_pdf,   "PDF");
     leg.Draw();
 
-    static constexpr Double_t lbl_y2 = 0.82;
+    const Double_t lbl_y2 =
+      ( draw_scale_unc || draw_pdf_unc ? 0.82 : 0.88 );
 
     TLatex cs_lbl(0.73,lbl_y2, sigma_prt(sigma,sigma_prec).c_str());
     cs_lbl.SetNDC();

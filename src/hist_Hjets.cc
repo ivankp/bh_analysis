@@ -252,7 +252,6 @@ int main(int argc, char** argv)
     vector<hist_wt> h_jet_##var; \
     h_jet_##var.reserve(njetsR); \
     for (size_t j=1; j<=njetsR; ++j) { \
-      cout << cat("jet",j,'_',#var) << endl; \
       h_jet_##var.emplace_back(cat("jet",j,'_',#var)); \
     }
 
@@ -292,14 +291,14 @@ int main(int argc, char** argv)
   if (njets>1) for (size_t j=0; j<njetsR; ++j) {
     h_jet_pT_jjpT[j].reserve(ndy);
     for (size_t i=0; i<ndy; ++i)
-      h_jet_pT_jjpT[j].emplace_back(cat("jet",j+1,"_pT_jjpT_dy",i+1));
+      h_jet_pT_jjpT[j].emplace_back(cat("jet",j+1,"_pT_jjpT_mindy",i+1));
   }
 
   vector<vector<hist_wt>> h_jet_pT_jjdy(ndy);
   if (njets>1) for (size_t j=0; j<njetsR; ++j) {
     h_jet_pT_jjdy[j].reserve(ndy);
     for (size_t i=0; i<ndy; ++i)
-      h_jet_pT_jjdy[j].emplace_back(cat("jet",j+1,"_pT_jjdy_dy",i+1));
+      h_jet_pT_jjdy[j].emplace_back(cat("jet",j+1,"_pT_jjdy_mindy",i+1));
   }
 
   // Reading entries from the input TChain **************************
@@ -355,10 +354,12 @@ int main(int argc, char** argv)
 
     if (sj_given) { // Read jets from SpartyJet ntuple
       const vector<TLorentzVector> sj_jets = sj_alg->jetsByPt(jet_pt_cut,jet_eta_cut);
+
+      // skip entry if not enough jets
       if (sj_jets.size() < njets) continue;
-      for (const auto& jet : sj_jets) {
-        jets.emplace_back(jet,H_y);
-      }
+      
+      // add to jets container
+      for (const auto& jet : sj_jets) jets.emplace_back(jet,H_y);
 
     } else { // Clusted with FastJet on the fly
       vector<fastjet::PseudoJet> particles;
@@ -371,21 +372,30 @@ int main(int argc, char** argv)
         );
       }
 
-      // Cluster, sort jets by pT, and apply pT cut
-      const vector<fastjet::PseudoJet> fj_jets = sorted_by_pt(
-        fastjet::ClusterSequence(particles, *jet_def).inclusive_jets(jet_pt_cut)
-      );
-      if (fj_jets.size() < njets) continue;
+      // Cluster and apply pT cut
+      vector<fastjet::PseudoJet> fj_jets =
+        fastjet::ClusterSequence(particles, *jet_def).inclusive_jets(jet_pt_cut);
 
       // Apply eta cut
-      for (const auto& jet : fj_jets) {
-        if (abs(jet.eta()) < jet_eta_cut)
-          jets.emplace_back(jet,H_y);
+      for (auto it=fj_jets.begin(); it!=fj_jets.end(); ) {
+        if (abs(it->eta()) > jet_eta_cut) fj_jets.erase(it);
+        else ++it;
       }
+
+      // skip entry if not enough jets
+      if (fj_jets.size() < njets) continue;
+
+      // add to jets container
+      for (const auto& jet : fj_jets) jets.emplace_back(jet,H_y);
+      
+      // sort by pt
+      sort(jets.begin(), jets.end(), [](const Jet& i, const Jet& j){
+        return ( i.pT > j.pT );
+      });
     }
     // ****************************************************
 
-    const size_t nj = min(jets.size(),njetsR);
+    const size_t nj = jets.size();
 
     // Increment selected entries
     ++num_selected;
@@ -409,11 +419,11 @@ int main(int argc, char** argv)
     h_H_pT   .Fill(H_pT);
     h_H_y    .Fill(H_y);
 
-    h_jjdy_dy.Fill(jjpT_dy);
     h_jjpT_dy.Fill(jjpT_dy);
+    h_jjdy_dy.Fill(jjdy_dy);
 
     TLorentzVector Hnj = higgs;
-    for (size_t j=0; j<nj; ++j) {
+    for (size_t j=0, _nj=min(nj,njetsR); j<_nj; ++j) {
       h_jet_mass[j].Fill(jets[j].mass);
       h_jet_pT  [j].Fill(jets[j].pT  );
       h_jet_y   [j].Fill(jets[j].y   );
@@ -424,12 +434,12 @@ int main(int argc, char** argv)
       if (njets>1) {
         // dy by pT
         for (size_t i=0; i<ndy; ++i)
-          if ( jjpT_dy < (i+1) )
+          if ( jjpT_dy > (i+1) )
             h_jet_pT_jjpT[j][i].Fill(jets[j].pT);
 
         // dy by dy
         for (size_t i=0; i<ndy; ++i)
-          if ( jjdy_dy < (i+1) )
+          if ( jjdy_dy > (i+1) )
             h_jet_pT_jjdy[j][i].Fill(jets[j].pT);
       }
     }
