@@ -240,14 +240,14 @@ int main(int argc, char** argv)
   }
 
   fout->cd();
-  
+
   const size_t njetsR = njets + 1;
 
   // Book histograms ************************************************
   TH1* h_N = hist_css->mkhist("N");
 
   #define h_(name) hist_wt h_##name(#name);
-  
+
   #define h_jet_var(var) \
     vector<hist_wt> h_jet_##var; \
     h_jet_##var.reserve(njetsR); \
@@ -268,11 +268,11 @@ int main(int argc, char** argv)
 
   // Book Histograms ************************************************
   h_(H_pT); h_(H_y); h_(H_mass);
-  
+
   h_jet_var(pT)
 
   h_(jets_HT);
-  
+
   vector<hist_wt> h_Hnj_pT; h_Hnj_pT.reserve(njetsR);
   for (size_t j=1; j<=njetsR; ++j) {
     stringstream ss;
@@ -283,18 +283,18 @@ int main(int argc, char** argv)
   h_jet_var(y); h_jet_var(mass); h_jet_var(tau);
 
   h_(jets_tau_max); h_(jets_tau_sum);
-  
-  h_(dy_jj_lead_dy); h_(dy_jj_lead_pT);
-  
+
+  h_(jjpT_dy); h_(jjdy_dy);
+
   const size_t ndy = 6;
-  
+
   vector<vector<hist_wt>> h_jet_pT_jjpT(ndy);
   if (njets>1) for (size_t j=0; j<njetsR; ++j) {
     h_jet_pT_jjpT[j].reserve(ndy);
     for (size_t i=0; i<ndy; ++i)
       h_jet_pT_jjpT[j].emplace_back(cat("jet",j+1,"_pT_jjpT_dy",i+1));
   }
-  
+
   vector<vector<hist_wt>> h_jet_pT_jjdy(ndy);
   if (njets>1) for (size_t j=0; j<njetsR; ++j) {
     h_jet_pT_jjdy[j].reserve(ndy);
@@ -309,9 +309,9 @@ int main(int argc, char** argv)
   if (ents.first>0) cout << " starting at " << ents.first;
   cout << endl;
   timed_counter counter(counter_newline);
-  
+
   // variables
-  Double_t dy_jjpT = 0, dy_jjdy = 0;
+  Double_t jjpT_dy = 0, jjdy_dy = 0;
 
   // LOOP
   for (Long64_t ent = ents.first, ent_end = ents.end(); ent < ent_end; ++ent) {
@@ -389,25 +389,28 @@ int main(int argc, char** argv)
 
     // Increment selected entries
     ++num_selected;
-    
+
     if (njets>1) {
       // jj_dy by pT
-      dy_jjpT = abs(jets[0].y - jets[1].y);
+      jjpT_dy = abs(jets[0].y - jets[1].y);
 
       // jj_dy by dy
-      dy_jjdy = dy_jjpT;
+      jjdy_dy = jjpT_dy;
       for (size_t i=2; i<nj; ++i) {
         for (size_t j=0; j<i; ++j) {
           const Double_t dy = abs(jets[i].y - jets[j].y);
-          if (dy > dy_jjdy) dy_jjdy = dy;
+          if (dy > jjdy_dy) jjdy_dy = dy;
         }
       }
     }
 
     // Fill histograms ************************************
-    h_H_mass.Fill(H_mass);
-    h_H_pT  .Fill(H_pT);
-    h_H_y   .Fill(H_y);
+    h_H_mass .Fill(H_mass);
+    h_H_pT   .Fill(H_pT);
+    h_H_y    .Fill(H_y);
+
+    h_jjdy_dy.Fill(jjpT_dy);
+    h_jjpT_dy.Fill(jjpT_dy);
 
     TLorentzVector Hnj = higgs;
     for (size_t j=0; j<nj; ++j) {
@@ -415,22 +418,22 @@ int main(int argc, char** argv)
       h_jet_pT  [j].Fill(jets[j].pT  );
       h_jet_y   [j].Fill(jets[j].y   );
       h_jet_tau [j].Fill(jets[j].tau );
-      
+
       h_Hnj_pT  [j].Fill( (Hnj += jets[j].p).Pt() );
-      
+
       if (njets>1) {
         // dy by pT
         for (size_t i=0; i<ndy; ++i)
-          if ( dy_jjpT < (i+1) )
+          if ( jjpT_dy < (i+1) )
             h_jet_pT_jjpT[j][i].Fill(jets[j].pT);
-        
+
         // dy by dy
         for (size_t i=0; i<ndy; ++i)
-          if ( dy_jjdy < (i+1) )
+          if ( jjdy_dy < (i+1) )
             h_jet_pT_jjdy[j][i].Fill(jets[j].pT);
       }
     }
-      
+
     Double_t jets_HT = 0, jets_tau_max = 0, jets_tau_sum = 0;
     for (const auto& jet : jets) {
       jets_HT += jet.pT;
@@ -441,7 +444,7 @@ int main(int argc, char** argv)
     h_jets_HT.Fill(jets_HT);
     h_jets_tau_max.Fill(jets_tau_max);
     h_jets_tau_sum.Fill(jets_tau_sum);
-    
+
   } // END of event loop ********************************************
 
   counter.prt(ents.end());
