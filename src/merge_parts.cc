@@ -82,10 +82,12 @@ int main(int argc, char** argv)
             } else {
               const auto it = hist_names.find(h->GetName());
               if (it==hist_names.end()) {
-                cerr << "Unexpected histogram " << h->GetName()
+                cerr << "\n\033[33mWarning\033[0m:"
+                        " Unexpected histogram " << h->GetName()
                      << " in file " << f->GetName()
-                     << " in dir " << dir->GetName();
-                exit(1);
+                     << " in dir " << dir->GetName() << endl;
+                // exit(1);
+                continue;
               } else {
                 ++it->second;
               }
@@ -110,7 +112,7 @@ int main(int argc, char** argv)
         const int first_counts = it->second;
         for (auto end=hist_names.end(); it!=end; ++it) {
           if (it->second != first_counts) {
-            cerr << "Expected hist "
+            cerr << "\n\033[34mError\033[0m: Expected hist "
                  << (first_counts < it->second ? it->first
                                                : hist_names.begin()->first)
                  << " is not in file " << f->GetName()
@@ -153,7 +155,7 @@ int main(int argc, char** argv)
 
   // Write and close output root file
   fout->Write();
-  cout << "\nWrote file: " << fout->GetName() << endl;
+  cout << "\n\033[32mWrote file\033[0m: " << fout->GetName() << endl;
   delete fout;
 
   return 0;
