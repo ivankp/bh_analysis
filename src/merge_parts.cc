@@ -112,12 +112,13 @@ int main(int argc, char** argv)
         const int first_counts = it->second;
         for (auto end=hist_names.end(); it!=end; ++it) {
           if (it->second != first_counts) {
-            cerr << "\n\033[34mError\033[0m: Expected hist "
+            cerr << "\n\033[33mWarning\033[0m: Expected hist "
                  << (first_counts < it->second ? it->first
                                                : hist_names.begin()->first)
                  << " is not in file " << f->GetName()
                  << " in dir " << dir->GetName();
-            exit(1);
+            // exit(1);
+            continue;
           }
         }
 
