@@ -82,7 +82,7 @@ int main(int argc, char** argv)
             } else {
               const auto it = hist_names.find(h->GetName());
               if (it==hist_names.end()) {
-                cerr << "\n\033[33mWarning\033[0m:"
+                cerr << "\033[33mWarning\033[0m:"
                         " Unexpected histogram " << h->GetName()
                      << " in file " << f->GetName()
                      << " in dir " << dir->GetName() << endl;
@@ -113,7 +113,7 @@ int main(int argc, char** argv)
         for (auto end=hist_names.end(); it!=end; ++it) {
           if (it->second != first_counts) {
             cerr << "\n\033[33mWarning\033[0m: Expected hist "
-                 << (first_counts < it->second ? it->first
+                 << (first_counts > it->second ? it->first
                                                : hist_names.begin()->first)
                  << " is not in file " << f->GetName()
                  << " in dir " << dir->GetName();
