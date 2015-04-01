@@ -4,12 +4,16 @@
   Sumw2: false;
 }
 
-[^_]*_y(?:_.*)? {
+.*_y(?:_.*)? {
   Bins: 36 -4.5 4.5;
 }
 
-[^_]*_dy(?:_.*)? {
-  Bins: 9 0 9;
+.*_dy(?:_.*)? {
+  Bins: 18 0 9;
+}
+
+.*_dphi(?:_.*)? {
+  Bins: 18 0 3.1416;
 }
 
 H_pT {
@@ -48,6 +52,10 @@ jet\d_mass {
   Bins: 20 0 10;
 }
 
+jet4_mass {
+  Bins: 20 -1 1;
+}
+
 jet\d_tau {
   Bins: 25 0 100;
 }
@@ -58,6 +66,22 @@ jets_tau_max {
 
 jets_tau_sum {
   Bins: 25 0 150;
+}
+
+.*_N_.* {
+  Bins: 5 -0.5 4.5;
+}
+
+jj[^_]*_mass {
+  Bins: 35 0 700;
+}
+
+Hjj[^_]*_mass {
+  Bins: 30 150 2000;
+}
+
+.*_(loose|tight)_.* {
+  Bins: 1 0 1;
 }
 
 N {

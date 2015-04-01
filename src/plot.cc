@@ -180,11 +180,12 @@ int main(int argc, char** argv)
     } else if (h_name.find("_mass") != string::npos) {
       h_var = var::mass;
     } else if ( (h_name.find("_y") != string::npos) ||
-                (h_name.find("_deltay") != string::npos) ||
-                (h_name.find("_dy") != string::npos) ) {
+                (h_name.find("_dy") != string::npos) ||
+                (h_name.find("_deltay") != string::npos) ) {
       h_var = var::y;
-    } else if ( (h_name.find("_deltaphi") != string::npos) ||
-                (h_name.find("_phi") != string::npos) ) {
+    } else if ( (h_name.find("_phi") != string::npos) ||
+                (h_name.find("_dphi") != string::npos) ||
+                (h_name.find("_deltaphi") != string::npos) ) {
       h_var = var::phi;
     } else if (h_name.find("_HT") != string::npos) {
       h_var = var::HT;
@@ -373,12 +374,15 @@ int main(int argc, char** argv)
     jet_alg_lbl.SetTextSize(0.035);
     jet_alg_lbl.Draw();
 
-    TLatex pdf_lbl(0.73,lbl_y2-0.12, ("PDF: "+combine(pdf_name)).c_str() );
-    pdf_lbl.SetNDC();
-    pdf_lbl.SetTextAlign(13);
-    pdf_lbl.SetTextFont(42);
-    pdf_lbl.SetTextSize(0.035);
-    pdf_lbl.Draw();
+    unique_ptr<TLatex> pdf_lbl;
+    if (pdf_name.size()) {
+      pdf_lbl.reset( new TLatex(0.73,lbl_y2-0.12, ("PDF: "+combine(pdf_name)).c_str()) );
+      pdf_lbl->SetNDC();
+      pdf_lbl->SetTextAlign(13);
+      pdf_lbl->SetTextFont(42);
+      pdf_lbl->SetTextSize(0.035);
+      pdf_lbl->Draw();
+    }
 
     unique_ptr<TText> u_lbl, o_lbl;
     if (of_lim_set) {

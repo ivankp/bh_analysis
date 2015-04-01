@@ -8,13 +8,15 @@
 using namespace std;
 
 hist_wt::hist_wt(const string& name) {
-  TH1* hist = css->mkhist(name);
-  for (auto& wt : weight::all) {
-    const weight *w = wt.get();
-    dirs[w]->cd();
-    h[w] = static_cast<TH1*>( hist->Clone() );
+  if (name.size()) {
+    TH1* hist = css->mkhist(name);
+    for (auto& wt : weight::all) {
+      const weight *w = wt.get();
+      dirs[w]->cd();
+      h[w] = static_cast<TH1*>( hist->Clone() );
+    }
+    delete hist;
   }
-  delete hist;
 }
 
 void hist_wt::Fill(Double_t x) noexcept {
