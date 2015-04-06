@@ -17,6 +17,7 @@
 #include <TTree.h>
 #include <TChain.h>
 #include <TDirectory.h>
+#include <TKey.h>
 #include <TH1.h>
 #include <TLorentzVector.h>
 
@@ -205,11 +206,12 @@ int main(int argc, char** argv)
     sj_alg.reset( new SJClusterAlg(tree,jet_alg) );
   } else {
     jet_def.reset( fj_jetdef(jet_alg) );
-    cout << "Clustering with " << jet_def->description() << endl << endl;
+    cout << "Clustering with " << jet_def->description() << endl;
   }
 
   // Weights tree branches
   if (wt_given) {
+    cout << endl;
     if (weights.size()) {
       cout << "Selected weights:" << endl;
       for (auto& w : weights) {
@@ -225,14 +227,13 @@ int main(int argc, char** argv)
         weight::add(tree,w);
       }
     }
+    cout << endl;
   } else weight::add(tree,"weight",false); // Use default ntuple weight
-  cout << endl;
 
   // Read CSS file with histogram properties
   cout << "Histogram CSS file: " << css_file << endl;
   shared_ptr<csshists> hist_css( new csshists(css_file) );
   hist_wt::css = hist_css;
-  cout << endl;
 
   // Open output file with histograms *******************************
   TFile* fout = new TFile(output_file.c_str(),"recreate");
@@ -249,8 +250,6 @@ int main(int argc, char** argv)
   const size_t njetsR = njets + 1;
 
   // Book histograms ************************************************
-  TH1* h_N = hist_css->mkhist("N");
-
   #define h_(name) hist_wt h_##name(#name);
 
   #define h_jj(name) hist_wt h_##name( njets>1 ? #name : string() );
@@ -364,7 +363,6 @@ int main(int argc, char** argv)
 
     // Count number of events (not entries)
     if (prev_id!=event.eid) {
-      h_N->Fill(0.5);
       prev_id = event.eid;
       ++num_events;
     }
@@ -562,6 +560,16 @@ int main(int argc, char** argv)
   cout << endl;
   cout << "Selected entries: " << num_selected << endl;
   cout << "Processed events: " << num_events << endl;
+  
+  // Scale histograms by number of events ***************************
+  
+  for (auto& dir : hist_wt::dirs) {
+    for_each( TIter(dir.second->GetList()).Begin(), TIter::End(), [num_events](TObject *obj){
+      static_cast<TH1*>(obj)->Scale(1./num_events);
+    } );
+  }
+
+  // ****************************************************************
 
   // Close files
   fout->Write();
