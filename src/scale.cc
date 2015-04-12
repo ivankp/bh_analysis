@@ -26,7 +26,7 @@ void scale(TDirectory* dir, double factor) noexcept {
 
 int main(int argc, char** argv)
 {
-  if (argc!=2) {
+  if (argc!=3) {
     cout << "Usage: " << argv[0] << " factor file.root" << endl;
     return 1;
   }
