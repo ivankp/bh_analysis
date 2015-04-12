@@ -13,8 +13,9 @@
 /*.out
 /*.err
 /gosam
+/scripts/condor/out
+/scripts/condor/hists
 
 # Input files
 /data
 /ntuples
-
