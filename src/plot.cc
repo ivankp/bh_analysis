@@ -131,6 +131,11 @@ int main(int argc, char** argv)
   cout << "Output file: " << fout_name << endl;
   cout << endl;
 
+  // Number of events
+  TH1D *h_N = get<TH1D>(fin,"N");
+  const Double_t N_events = h_N->GetAt(1);
+  cout << "Events: " << lround(h_N->GetEntries()) << endl;
+
   // Properties
   set<string> pdf_name, jet_alg;
 
@@ -191,9 +196,9 @@ int main(int argc, char** argv)
     // Cross section
     const Double_t sigma   = ( h_name.find("_N_incl") != string::npos
                            ? h_cent->GetAt(1)
-                           : h_cent->Integral(0,nbins+1) );
-    const Double_t sigma_u = h_cent->GetAt(0);
-    const Double_t sigma_o = h_cent->GetAt(nbins+1);
+                           : h_cent->Integral(0,nbins+1) )/N_events;
+    const Double_t sigma_u = h_cent->GetAt(0)/N_events;
+    const Double_t sigma_o = h_cent->GetAt(nbins+1)/N_events;
 
     // Book vectors
     vector<Double_t> bins_edge(nbins,0.),
@@ -245,12 +250,13 @@ int main(int argc, char** argv)
     }
 
     for (size_t i=0;i<nbins;++i) {
-      cent     [i] /= bins_wdth[i];
+      const Double_t unit = N_events*bins_wdth[i];
+      cent     [i] /= unit;
       h_cent->SetAt(cent[i],i+1);
-      pdf_lo   [i] /= bins_wdth[i];
-      pdf_hi   [i] /= bins_wdth[i];
-      scales_hi[i] /= bins_wdth[i];
-      scales_lo[i] /= bins_wdth[i];
+      pdf_lo   [i] /= unit;
+      pdf_hi   [i] /= unit;
+      scales_hi[i] /= unit;
+      scales_lo[i] /= unit;
     }
 
     // Draw *********************************************************

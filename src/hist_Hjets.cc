@@ -253,7 +253,7 @@ int main(int argc, char** argv)
   #define h_(name) hist_wt h_##name(#name);
 
   #define h_jj(name) hist_wt h_##name( njets>1 ? #name : string() );
-  
+
   #define h_jet_var(var) \
     vector<hist_wt> h_jet_##var; \
     h_jet_##var.reserve(njetsR); \
@@ -272,6 +272,8 @@ int main(int argc, char** argv)
    */
 
   // Book Histograms ************************************************
+  TH1* h_N = hist_css->mkhist("N");
+
   h_(H_pT); h_(H_y); h_(H_mass);
 
   h_jet_var(pT);
@@ -286,7 +288,7 @@ int main(int argc, char** argv)
   h_jet_var(y); h_jet_var(mass); h_jet_var(tau);
 
   h_(jets_tau_max); h_(jets_tau_sum);
-  
+
   h_(jets_N_incl); h_(jets_N_excl);
 
   h_jj(jjpT_dy);
@@ -323,7 +325,7 @@ int main(int argc, char** argv)
     for (size_t i=0; i<ndy; ++i)
       h_jet_pT_jjdy[j].emplace_back(cat("jet",j+1,"_pT_jjdy_mindy",i+1));
   }
-  
+
   h_jj(jjpT_loose_VBF); h_jj(jjdy_loose_VBF);
   h_jj(jjpT_tight_VBF); h_jj(jjdy_tight_VBF);
 
@@ -363,6 +365,7 @@ int main(int argc, char** argv)
 
     // Count number of events (not entries)
     if (prev_id!=event.eid) {
+      h_N->Fill(0.5);
       prev_id = event.eid;
       ++num_events;
     }
@@ -386,10 +389,10 @@ int main(int argc, char** argv)
 
       // skip entry if not enough jets
       if (nj >= njets) {
-      
+
         // add to jets container
         for (const auto& jet : sj_jets) jets.emplace_back(jet,H_y);
-        
+
       }
 
     } else { // Clusted with FastJet on the fly
@@ -420,16 +423,16 @@ int main(int argc, char** argv)
 
         // add to jets container
         for (const auto& jet : fj_jets) jets.emplace_back(jet,H_y);
-        
+
         // sort by pt
         sort(jets.begin(), jets.end(), [](const Jet& i, const Jet& j){
           return ( i.pT > j.pT );
         });
-        
+
       }
     }
     // ****************************************************
-    
+
     // Number of jets hists
     h_jets_N_excl.Fill(nj);
     for (size_t i=0; i<njetsR; i++) {
@@ -441,7 +444,7 @@ int main(int argc, char** argv)
 
     // Increment selected entries
     ++num_selected;
-    
+
     size_t jjdy_1 = 1, jjdy_2 = 0;
 
     // find Δy
@@ -462,7 +465,7 @@ int main(int argc, char** argv)
           }
         }
       }
-      
+
       jjdy_dphi = fmod( abs(jets[jjdy_1].p.Phi() - jets[jjdy_2].p.Phi()), M_PI);
     }
 
@@ -522,7 +525,7 @@ int main(int argc, char** argv)
         h_jjpT_loose_VBF .Fill( 0.5 );
         if (H_jj_dphi>2.6) h_jjpT_tight_VBF.Fill( 0.5 );
       }
-      
+
       if (jjdy_1 != 1) {
         jj = jets[jjdy_1].p + jets[jjdy_2].p;
         jj_mass   = jj.M();
@@ -560,16 +563,6 @@ int main(int argc, char** argv)
   cout << endl;
   cout << "Selected entries: " << num_selected << endl;
   cout << "Processed events: " << num_events << endl;
-  
-  // Scale histograms by number of events ***************************
-  
-  for (auto& dir : hist_wt::dirs) {
-    for_each( TIter(dir.second->GetList()).Begin(), TIter::End(), [num_events](TObject *obj){
-      static_cast<TH1*>(obj)->Scale(1./num_events);
-    } );
-  }
-
-  // ****************************************************************
 
   // Close files
   fout->Write();
