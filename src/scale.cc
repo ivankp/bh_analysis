@@ -37,7 +37,7 @@ int main(int argc, char** argv)
 
   scale(f,atof(argv[1]));
 
-  f->Write();
+  f->Write(0,TObject::kOverwrite);
 
   delete f;
   return 0;
