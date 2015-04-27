@@ -22,7 +22,7 @@ fi
 
 scales=HT2-unc
 pdf=CT10nlo
-jalg=AntiKt4
+jalg=AntiKt5
 cuts=pt30-eta4.4
 
 dir=/msu/data/t3work2/ivanp/H"$nj"j-ggf

@@ -15,6 +15,7 @@
 /gosam
 /scripts/condor/out
 /scripts/condor/hists
+/scripts/condor/*.tar.gz
 
 # Input files
 /data

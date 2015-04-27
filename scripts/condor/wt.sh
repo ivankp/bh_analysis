@@ -2,9 +2,9 @@
 
 source /home/ivanp/.scripts/env.sh
 
-dir=/msu/data/t3work2/ivanp/H1j-ggf
+dir=/msu/data/t3work2/ivanp/AA3j
 bh=$dir/bh
-wt=$dir/wt/13TeV/HT2-unc/CT10nlo
+wt=$dir/wt/8TeV/HT2-unc/CT10nlo
 
 BIN=/home/ivanp/work/bh_analysis/bin
 

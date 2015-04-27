@@ -8,17 +8,17 @@ mkdir -p hists/plots
 
 all=""
 
-for dir in H1j-ggf H2j-ggf H3j-ggf
+for dir in H3j-ggf
 do
-  all+=" "`find ../$dir/hist -type d -name all`
+  all+=" "`find ~/disk2/$dir/hist -type d -name all`
 done
 
 for dir in $all; do
   #echo $dir;
-  process=`echo $dir | cut -d'/' -f2`
-  energy=`echo $dir | cut -d'/' -f4`
+  process=`echo $dir | cut -d'/' -f5`
+  energy=`echo $dir | cut -d'/' -f7`
 
-  namesuf=`echo $dir | cut -d'/' -f2,4- | rev | cut -d '/' -f 2- | rev | sed -e "s/\//\_/g"`;
+  namesuf=`echo $dir | cut -d'/' -f5,7- | rev | cut -d '/' -f 2- | rev | sed -e "s/\//\_/g"`;
   suffix="hists/hists/$namesuf"
   echo $suffix
 
@@ -38,7 +38,7 @@ for dir in $all; do
   nlo="$suffix"_NLO.root
   if [ ! -f "$nlo" ]; then
     if [[ -f "$suffix"_B.root && -f "$suffix"_RS.root && -f "$suffix"_V.root && -f "$suffix"_I.root ]]; then
-      hadd $nlo "$suffix"_B.root "$suffix"_RS.root "$suffix"_V.root "$suffix"_I.root
+      $BIN/merge_parts $nlo "$suffix"_B.root "$suffix"_RS.root "$suffix"_V.root "$suffix"_I.root
     fi
   fi
 

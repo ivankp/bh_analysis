@@ -25,7 +25,7 @@ of=$out/$b
 
 echo "
 universe = vanilla
-executable = $scripts/wt.sh
+executable = $scripts/hist_Hjets.sh
 arguments = \"$f\"
 error  = $of.err
 log    = $of.log
