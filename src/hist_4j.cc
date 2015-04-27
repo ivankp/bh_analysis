@@ -74,7 +74,7 @@ int main(int argc, char** argv)
        "with --sj: read jets from SpartyJet ntuple")
       ("weight,w", po::value<vector<string>>(&weights),
        "weight branchs; if skipped:\n"
-       "  without --wt: ntuple weight is used\n"
+       "  without --wt: ntuple weight2 is used\n"
        "  with --wt: all weights from wt files")
       ("pt-cut1", po::value<double>(&pt_cut1)->default_value(100.,"100"),
        "first jet pT cut in GeV")
@@ -206,7 +206,7 @@ int main(int argc, char** argv)
         weight::add(tree,w);
       }
     }
-  } else weight::add(tree,"weight",false); // Use default ntuple weight
+  } else weight::add(tree,"weight2",false); // Use default ntuple weight2
   cout << endl;
 
   // Read CSS file with histogram properties
@@ -231,7 +231,7 @@ int main(int argc, char** argv)
   TH1* h_N   = hist_css->mkhist("N");
   TH1* h_pid = hist_css->mkhist("pid");
 
-  #define h_(name) h_##name(#name)
+  #define h_(name) h_##name(#name, &event.part[0])
 
   /* NOTE:
    * excl = exactly the indicated number of jets, zero if no j in name
@@ -275,7 +275,8 @@ int main(int argc, char** argv)
 
   // Reading entries from the input TChain ***************************
   Long64_t num_selected = 0, num_events = 0;
-  Int_t prev_id = -1;
+  Int_t  prev_id = -1;
+  Char_t prev_part = 0;
   cout << "Reading " << ents.len << " entries";
   if (ents.first>0) cout << " starting at " << ents.first;
   cout << endl;
@@ -296,6 +297,11 @@ int main(int argc, char** argv)
       h_N->Fill(0.5);
       prev_id = event.eid;
       ++num_events;
+      
+      if (prev_part=='R') { // Fill histograms with accumulated weights
+        for (auto h : hist_wt::all) h->FillIndirect();
+      }
+      prev_part = event.part[0];
     }
 
     // Fill histograms ***********************************
@@ -537,6 +543,11 @@ int main(int argc, char** argv)
     //h_2j_HT.Fill( jets[0].Pt() + jets[1].Pt() );
 
   } // END of event loop
+  
+  // take care of the last event
+  if (prev_part=='R') { // Fill histograms with accumulated weights
+    for (auto h : hist_wt::all) h->FillIndirect();
+  }
 
   counter.prt(ents.end());
   cout << endl;

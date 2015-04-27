@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <string>
 #include <sstream>
+#include <vector>
 #include <memory>
 
 #include <Rtypes.h>
@@ -16,13 +17,17 @@ class TDirectory;
 class weight;
 
 class hist_wt {
-  std::unordered_map<const weight*,TH1*> h;
+  Char_t *part;
+  std::unordered_map<const weight*,std::pair<TH1*,Double_t>> h;
 public:
-  hist_wt(const std::string& name);
+  hist_wt(const std::string& name, Char_t* part_ptr);
   void Fill(Double_t x) noexcept;
+  void FillIndirect() noexcept;
 
   static std::shared_ptr<const csshists> css;
   static std::unordered_map<const weight*,TDirectory*> dirs;
+  
+  static std::vector<hist_wt*> all;
 };
 
 #endif

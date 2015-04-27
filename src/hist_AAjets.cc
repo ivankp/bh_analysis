@@ -98,7 +98,7 @@ int main(int argc, char** argv)
        "with --sj: read jets from SpartyJet ntuple")
       ("weight,w", po::value<vector<string>>(&weights),
        "weight branchs; if skipped:\n"
-       "  without --wt: ntuple weight is used\n"
+       "  without --wt: ntuple weight2 is used\n"
        "  with --wt: all weights from wt files")
       ("jet-pt-cut", po::value<double>(&jet_pt_cut)->default_value(30.,"30"),
        "jet pT cut in GeV")
@@ -228,7 +228,7 @@ int main(int argc, char** argv)
       }
     }
     cout << endl;
-  } else weight::add(tree,"weight",false); // Use default ntuple weight
+  } else weight::add(tree,"weight2",false); // Use default ntuple weight2
 
   // Read CSS file with histogram properties
   cout << "Histogram CSS file: " << css_file << endl;
@@ -250,15 +250,15 @@ int main(int argc, char** argv)
   const size_t njetsR = njets + 1;
 
   // Book histograms ************************************************
-  #define h_(name) hist_wt h_##name(#name);
+  #define h_(name) hist_wt h_##name(#name, &event.part[0]);
 
-  #define h_jj(name) hist_wt h_##name( njets>1 ? #name : string() );
+  #define h_jj(name) hist_wt h_##name( njets>1 ? #name : string(), &event.part[0] );
 
   #define h_jet_var(var) \
     vector<hist_wt> h_jet_##var; \
     h_jet_##var.reserve(njetsR); \
     for (size_t j=1; j<=njetsR; ++j) { \
-      h_jet_##var.emplace_back(cat("jet",j,'_',#var)); \
+      h_jet_##var.emplace_back(cat("jet",j,'_',#var), &event.part[0]); \
     }
 
   /* NOTE:
@@ -284,7 +284,7 @@ int main(int argc, char** argv)
 
   vector<hist_wt> h_AAnj_pT; h_AAnj_pT.reserve(njetsR);
   for (size_t j=1; j<=njetsR; ++j) {
-    h_AAnj_pT.emplace_back(cat('H',j,"j_pT"));
+    h_AAnj_pT.emplace_back(cat('H',j,"j_pT"), &event.part[0]);
   }
 
   h_jet_var(y); h_jet_var(mass); h_jet_var(tau);
@@ -294,12 +294,12 @@ int main(int argc, char** argv)
   h_(jets_N_incl); h_(jets_N_excl);
 
   h_jj(jjpT_dy);
-  hist_wt h_jjpT_dy_nj_excl ( njets>1 ? cat("jjpT_dy_",njets, "j_excl") : string() ),
-          h_jjpT_dy_nRj_excl( njets>1 ? cat("jjpT_dy_",njetsR,"j_excl") : string() );
+  hist_wt h_jjpT_dy_nj_excl ( njets>1 ? cat("jjpT_dy_",njets, "j_excl") : string(), &event.part[0] ),
+          h_jjpT_dy_nRj_excl( njets>1 ? cat("jjpT_dy_",njetsR,"j_excl") : string(), &event.part[0] );
 
   h_jj(jjdy_dy);
-  hist_wt h_jjdy_dy_nj_excl ( njets>1 ? cat("jjdy_dy_",njets, "j_excl") : string() ),
-          h_jjdy_dy_nRj_excl( njets>1 ? cat("jjdy_dy_",njetsR,"j_excl") : string() );
+  hist_wt h_jjdy_dy_nj_excl ( njets>1 ? cat("jjdy_dy_",njets, "j_excl") : string(), &event.part[0] ),
+          h_jjdy_dy_nRj_excl( njets>1 ? cat("jjdy_dy_",njetsR,"j_excl") : string(), &event.part[0] );
 
   h_jj(jjpT_dphi); h_jj(jjdy_dphi);
   h_jj(AA_jjpT_dphi_VBF); h_jj(AA_jjdy_dphi_VBF);
@@ -317,14 +317,14 @@ int main(int argc, char** argv)
   if (njets>1) for (size_t j=0; j<njetsR; ++j) {
     h_jet_pT_jjpT[j].reserve(ndy);
     for (size_t i=0; i<ndy; ++i)
-      h_jet_pT_jjpT[j].emplace_back(cat("jet",j+1,"_pT_jjpT_mindy",i+1));
+      h_jet_pT_jjpT[j].emplace_back(cat("jet",j+1,"_pT_jjpT_mindy",i+1), &event.part[0]);
   }
 
   vector<vector<hist_wt>> h_jet_pT_jjdy(njetsR);
   if (njets>1) for (size_t j=0; j<njetsR; ++j) {
     h_jet_pT_jjdy[j].reserve(ndy);
     for (size_t i=0; i<ndy; ++i)
-      h_jet_pT_jjdy[j].emplace_back(cat("jet",j+1,"_pT_jjdy_mindy",i+1));
+      h_jet_pT_jjdy[j].emplace_back(cat("jet",j+1,"_pT_jjdy_mindy",i+1), &event.part[0]);
   }
 
   h_jj(jjpT_loose_VBF); h_jj(jjdy_loose_VBF);
@@ -333,6 +333,7 @@ int main(int argc, char** argv)
   // Reading entries from the input TChain **************************
   Long64_t num_selected = 0, num_events = 0;
   Int_t prev_id = -1;
+  Char_t prev_part = 0;
   cout << "Reading " << ents.len << " entries";
   if (ents.first>0) cout << " starting at " << ents.first;
   cout << endl;
@@ -374,6 +375,11 @@ int main(int argc, char** argv)
       h_N->Fill(0.5);
       prev_id = event.eid;
       ++num_events;
+      
+      if (prev_part=='R') { // Fill histograms with accumulated weights
+        for (auto h : hist_wt::all) h->FillIndirect();
+      }
+      prev_part = event.part[0];
     }
 
     const TLorentzVector A1(event.px[Ai1], event.py[Ai1],
@@ -598,6 +604,11 @@ int main(int argc, char** argv)
     h_jets_tau_sum.Fill(jets_tau_sum);
 
   } // END of event loop ********************************************
+  
+  // take care of the last event
+  if (prev_part=='R') { // Fill histograms with accumulated weights
+    for (auto h : hist_wt::all) h->FillIndirect();
+  }
 
   counter.prt(ents.end());
   cout << endl;

@@ -84,6 +84,8 @@ $(HIST_EXE): bin/%: lib/%.o
 	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(ROOT_LIBS) $(FJ_LIBS) -lboost_program_options -lboost_regex
 
 # Objects' dependencies #############################################
+lib/hist_wt.o: parts/weight.hh
+
 lib/inspect_bh.o: parts/BHEvent.hh
 
 lib/reweigh.o: tools/timed_counter.hh parts/rew_calc.hh parts/BHEvent.hh

@@ -18,6 +18,10 @@ void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
       tree->SetBranchAddress("E" , E );
       tree->SetBranchAddress("kf", kf);
 
+      if (!old) { // for treating RS uncertainties properly
+        tree->SetBranchAddress("part", part);
+      }
+
     } break;
     case reweighting: {
 
