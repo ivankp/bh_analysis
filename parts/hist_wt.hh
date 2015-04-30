@@ -1,10 +1,11 @@
 #ifndef hist_wt_hh
 #define hist_wt_hh
 
-#include <unordered_map>
 #include <string>
 #include <sstream>
 #include <vector>
+#include <unordered_map>
+#include <tuple>
 #include <memory>
 
 #include <Rtypes.h>
@@ -17,12 +18,14 @@ class TDirectory;
 class weight;
 
 class hist_wt {
-  Char_t *part;
-  std::unordered_map<const weight*,std::pair<TH1*,Double_t>> h;
+  std::unordered_map<const weight*,
+    std::tuple< TH1*, std::unordered_map<Int_t,Double_t>, Double_t* >> h;
+  bool keep_sumw2;
 public:
-  hist_wt(const std::string& name, Char_t* part_ptr);
+  hist_wt(const std::string& name);
   void Fill(Double_t x) noexcept;
-  void FillIndirect() noexcept;
+  void FillSumw2() noexcept;
+  void AdoptSumw2() noexcept;
 
   static std::shared_ptr<const csshists> css;
   static std::unordered_map<const weight*,TDirectory*> dirs;

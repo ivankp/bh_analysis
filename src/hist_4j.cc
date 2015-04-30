@@ -231,7 +231,7 @@ int main(int argc, char** argv)
   TH1* h_N   = hist_css->mkhist("N");
   TH1* h_pid = hist_css->mkhist("pid");
 
-  #define h_(name) h_##name(#name, &event.part[0])
+  #define h_(name) h_##name(#name)
 
   /* NOTE:
    * excl = exactly the indicated number of jets, zero if no j in name
@@ -276,7 +276,6 @@ int main(int argc, char** argv)
   // Reading entries from the input TChain ***************************
   Long64_t num_selected = 0, num_events = 0;
   Int_t  prev_id = -1;
-  Char_t prev_part = 0;
   cout << "Reading " << ents.len << " entries";
   if (ents.first>0) cout << " starting at " << ents.first;
   cout << endl;
@@ -298,10 +297,7 @@ int main(int argc, char** argv)
       prev_id = event.eid;
       ++num_events;
       
-      if (prev_part=='R') { // Fill histograms with accumulated weights
-        for (auto h : hist_wt::all) h->FillIndirect();
-      }
-      prev_part = event.part[0];
+      for (auto h : hist_wt::all) h->FillSumw2();
     }
 
     // Fill histograms ***********************************
@@ -544,9 +540,10 @@ int main(int argc, char** argv)
 
   } // END of event loop
   
-  // take care of the last event
-  if (prev_part=='R') { // Fill histograms with accumulated weights
-    for (auto h : hist_wt::all) h->FillIndirect();
+  // finish correcting Sumw2
+  for (auto h : hist_wt::all) {
+    h->FillSumw2();
+    h->AdoptSumw2();
   }
 
   counter.prt(ents.end());
