@@ -105,7 +105,7 @@ int main(int argc, char** argv)
       ("jet-eta-cut", po::value<double>(&jet_eta_cut)->default_value(4.4,"4.4"),
        "jet eta cut")
       ("style,s", po::value<string>(&css_file)
-       ->default_value(CONFDIR"/Hjets.css","Hjets.css"),
+       ->default_value(CONFDIR"/AAjets.css","AAjets.css"),
        "CSS style file for histogram binning and formating")
       ("num-ent,n", po::value<int_range<Long64_t>>(&ents),
        "process only this many entries,\nnum or first:num")
@@ -284,7 +284,7 @@ int main(int argc, char** argv)
 
   vector<hist_wt> h_AAnj_pT; h_AAnj_pT.reserve(njetsR);
   for (size_t j=1; j<=njetsR; ++j) {
-    h_AAnj_pT.emplace_back(cat('H',j,"j_pT"));
+    h_AAnj_pT.emplace_back(cat("AA",j,"j_pT"));
   }
 
   h_jet_var(y); h_jet_var(mass); h_jet_var(tau);
@@ -473,7 +473,7 @@ int main(int argc, char** argv)
 
     // Number of jets hists
     h_jets_N_excl.Fill(nj);
-    for (size_t i=0; i<njetsR; i++) {
+    for (size_t i=0; i<=njetsR; i++) {
       if (nj >= i) h_jets_N_incl.Fill(i);
     }
 

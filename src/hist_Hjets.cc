@@ -437,7 +437,7 @@ int main(int argc, char** argv)
 
     // Number of jets hists
     h_jets_N_excl.Fill(nj);
-    for (size_t i=0; i<njetsR; i++) {
+    for (size_t i=0; i<=njetsR; i++) {
       if (nj >= i) h_jets_N_incl.Fill(i);
     }
 
