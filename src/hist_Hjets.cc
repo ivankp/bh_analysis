@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <memory>
 #include <algorithm>
+#include <limits>
 
 #include <boost/program_options.hpp>
 
@@ -38,11 +39,47 @@
 using namespace std;
 namespace po = boost::program_options;
 
-template<typename T> inline T sq(T x) { return x*x; }
+template<typename T> inline T sq(T x) noexcept { return x*x; }
 
-template<typename T> inline bool between(T a, T x, T b) {
+template<typename T> inline bool between(T a, T x, T b) noexcept {
   if (b < a) swap(a,b);
   return ( (a<=x) && (x<=b) );
+}
+
+Double_t EPSTENSOR(const TLorentzVector& p2, const TLorentzVector& p4) noexcept {
+/*
+	constexpr TLorentzVector p1(0.,0., 1.,1.);
+	constexpr TLorentzVector p2(0.,0.,-1.,1.);
+
+  return -std::complex<double>(0.,1.)*(
+      p1.x()*p2.y()*p3.z()*p4.E()
+    - p1.x()*p2.y()*p3.E()*p4.z()
+    - p1.x()*p2.z()*p3.y()*p4.E()
+    + p1.x()*p2.z()*p3.E()*p4.y()
+    + p1.x()*p2.E()*p3.y()*p4.z()
+    - p1.x()*p2.E()*p3.z()*p4.y()
+    - p1.y()*p2.x()*p3.z()*p4.E()
+    + p1.y()*p2.x()*p3.E()*p4.z()
+    + p1.y()*p2.z()*p3.x()*p4.E()
+    - p1.y()*p2.z()*p3.E()*p4.x()
+    - p1.y()*p2.E()*p3.x()*p4.z()
+    + p1.y()*p2.E()*p3.z()*p4.x()
+    + p1.z()*p2.x()*p3.y()*p4.E()
+    - p1.z()*p2.x()*p3.E()*p4.y()
+    - p1.z()*p2.y()*p3.x()*p4.E()
+    + p1.z()*p2.y()*p3.E()*p4.x()
+    + p1.z()*p2.E()*p3.x()*p4.y()
+    - p1.z()*p2.E()*p3.y()*p4.x()
+    - p1.E()*p2.x()*p3.y()*p4.z()
+    + p1.E()*p2.x()*p3.z()*p4.y()
+    + p1.E()*p2.y()*p3.x()*p4.z()
+    - p1.E()*p2.y()*p3.z()*p4.x()
+    - p1.E()*p2.z()*p3.x()*p4.y()
+    + p1.E()*p2.z()*p3.y()*p4.x()
+  );
+*/
+  return p2.Px()*p4.Py() - p2.Py()*p4.Px() +
+         p2.Px()*p4.Py() - p2.Py()*p4.Px();
 }
 
 // ******************************************************************
@@ -304,8 +341,9 @@ int main(int argc, char** argv)
 
   h_jj(jjpT_mass);   h_jj(jjdy_mass);
   h_jj(HjjpT_mass);  h_jj(Hjjdy_mass);
-  h_jj(H_jjpT_dy);   h_jj(H_jjdy_dy);
-  h_jj(H_jjpT_dphi); h_jj(H_jjdy_dphi);
+  h_jj(H_jjpT_dy);   h_jj(H_jjpT_dy_avgyjj);
+  h_jj(H_jjdy_dy);   h_jj(H_jjdy_dy_avgyjj);
+  h_jj(H_jjpT_dphi); h_jj(H_jjdy_dphi); h_jj(H_jj_phi2);
 
   // h_jj(jjpT_N_jhj_incl); h_jj(jjdy_N_jhj_incl);
   h_jj(jjpT_N_jhj_excl); h_jj(jjdy_N_jhj_excl);
@@ -521,6 +559,8 @@ int main(int argc, char** argv)
       h_HjjpT_mass .Fill( (higgs + jj).M() );
       h_H_jjpT_dy  .Fill( abs(H_y - jj.Rapidity()) );
       h_H_jjpT_dphi.Fill( H_jj_dphi );
+      
+      h_H_jjpT_dy_avgyjj.Fill( abs(H_y - (jets[0].y+jets[1].y)/2) );
 
       if (jjpT_dy>2.8 && jj_mass>400) {
         h_H_jjpT_dphi_VBF.Fill( H_jj_dphi );
@@ -537,6 +577,8 @@ int main(int argc, char** argv)
       h_Hjjdy_mass .Fill( (higgs + jj).M() );
       h_H_jjdy_dy  .Fill( abs(H_y - jj.Rapidity()) );
       h_H_jjdy_dphi.Fill( H_jj_dphi );
+      
+      h_H_jjdy_dy_avgyjj.Fill( abs(H_y - (jets[jjdy_1].y+jets[jjdy_2].y)/2) );
 
       if (jjdy_dy>2.8 && jj_mass>400) {
         h_H_jjdy_dphi_VBF.Fill( H_jj_dphi );
@@ -546,7 +588,59 @@ int main(int argc, char** argv)
 
       h_jjpT_N_jhj_excl.Fill( between(jets[0     ].y,H_y,jets[1     ].y) ? nj : 0 );
       h_jjdy_N_jhj_excl.Fill( between(jets[jjdy_1].y,H_y,jets[jjdy_1].y) ? nj : 0 );
-    }
+
+
+		  // Calculation of phi_2 from arXiv:1001.3822  
+		  // phi_2 = azimuthal angle between the vector sum of jets 
+		  // forward and jets backward of the Higgs boson
+
+		  TLorentzVector vsumf(0.,0.,0.,0.);
+		  TLorentzVector vsumb(0.,0.,0.,0.);
+		
+		  Double_t yb = numeric_limits<Double_t>::max();
+		  Double_t yf = -yb;
+
+		  const TLorentzVector *jb = nullptr, *jf = nullptr;
+		
+		  Double_t f_nonzero = false, b_nonzero = false;
+		  for (const auto& j : jets) {
+		    if (j.y > H_y) { vsumf += j.p; f_nonzero = true; }
+		    else           { vsumb += j.p; b_nonzero = true; }
+
+		    // find most forward and backward jets
+		    if (j.y > yf) { jf = &j.p; yf = j.y; }
+		    if (j.y < yb) { jb = &j.p; yb = j.y; }
+		  }
+
+		  // test if the Higgs boson is between the jets
+		  // const bool higgsBetween = (yb < H_y && H_y < yf);
+
+		  Double_t phi2;
+		  // Calculate phi_2
+		  if (f_nonzero && b_nonzero) {
+		    phi2 = acos((vsumb.Px()*vsumf.Px()+vsumb.Py()*vsumf.Py())/
+			        (sqrt(vsumb.Px()*vsumb.Px()+vsumb.Py()*vsumb.Py())*
+			         sqrt(vsumf.Px()*vsumf.Px()+vsumf.Py()*vsumf.Py()))); 
+		    if (EPSTENSOR(vsumb,vsumf)<0.) phi2 *= -1.;
+
+		  } else if (!f_nonzero) {
+		    vsumb -= *jf;
+		    phi2 = acos((vsumb.Px()*jf->Px()+vsumb.Py()*jf->Py())/
+			        (sqrt(vsumb.Px()*vsumb.Px()+vsumb.Py()*vsumb.Py())*
+			         sqrt(jf->Px()*jf->Px()+jf->Py()*jf->Py())));
+		    if (EPSTENSOR(vsumb,*jf)<0.) phi2 *= -1.;
+
+		  } else { 
+		    vsumf -= *jb;
+		    phi2 = acos((jb->Px()*vsumf.Px()+jb->Py()*vsumf.Py())/
+			        (sqrt(jb->Px()*jb->Px()+jb->Py()*jb->Py())*
+			         sqrt(vsumf.Px()*vsumf.Px()+vsumf.Py()*vsumf.Py())));  
+		    if (EPSTENSOR(*jb,vsumf)<0.) phi2 *= -1.;
+		  }
+		
+		  h_H_jj_phi2.Fill(phi2);
+
+    } // END if (njets>1)
 
     Double_t jets_HT = 0, jets_tau_max = 0, jets_tau_sum = 0;
     for (const auto& jet : jets) {
