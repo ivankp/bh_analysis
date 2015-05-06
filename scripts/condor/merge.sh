@@ -8,7 +8,7 @@ mkdir -p hists/plots
 
 all=""
 
-for dir in H3j-ggf
+for dir in H1j-ggf H2j-ggf H3j-ggf AA0j AA1j AA2j AA3j
 do
   all+=" "`find ~/disk2/$dir/hist -type d -name all`
 done

@@ -16,6 +16,8 @@
 /scripts/condor/out
 /scripts/condor/hists
 /scripts/condor/*.tar.gz
+/scripts/sql/*.db
+/scripts/sql/*.tar.gz
 
 # Input files
 /data

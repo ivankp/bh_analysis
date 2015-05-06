@@ -16,22 +16,22 @@ fi
 
 for f in `ls $bh | grep $pat`; do
 
-echo ""
+#echo ""
 echo "Submitting $f"
-echo ""
+#echo ""
 
 b=`basename $f .root`
 of=$out/$b
 
 echo "
 universe = vanilla
-executable = $scripts/wt.sh
+executable = $scripts/hist_Hjets.sh
 arguments = \"$f\"
 error  = $of.err
 log    = $of.log
 output = $of.out
 queue 1
-" | condor_submit -
+" | condor_submit - > /dev/null
 
 while [ ! -e $of.out ]; do
   sleep 1

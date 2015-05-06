@@ -1,0 +1,44 @@
+#!/bin/bash
+
+db=$1
+
+all="/msu/data/t3work4/luisonig"
+
+scales="HT2"
+
+for d in `ls $all | grep '^H[0-9]jets_ggf$'`; do
+
+  dir="$all/$d/NTuplesFiles"
+
+  cd $dir
+  dir=`pwd -P`
+  cd -
+
+  for f in `ls $dir`; do
+    echo $f
+    arr=(`echo $f | tr '_' ' '`)
+
+    #md5=`md5sum $dir/$f | cut -d' ' -f1`
+    #echo $md5
+
+    njets=${arr[0]}
+    njets=${njets:1:1}
+
+    pt=${arr[4]}
+    pt=${pt:2:2}
+
+    eta=${arr[5]}
+    eta=${eta:3:3}
+
+    energy=${arr[3]}
+    energy=$(($energy * 2 / 1000))
+
+    sqlite3 $db "insert into bh
+      (file,dir,particle,njets,process,energy,part,scales,jet_pt_cut,jet_eta_cut)
+      values
+      ('$f','$dir','H','$njets','${arr[1]}','$energy','${arr[2]}','$scales','$pt','$eta')
+    ;"
+
+  done
+done
+

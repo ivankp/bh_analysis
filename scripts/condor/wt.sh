@@ -2,7 +2,7 @@
 
 source /home/ivanp/.scripts/env.sh
 
-dir=/msu/data/t3work2/ivanp/AA3j
+dir=/msu/data/t3work2/ivanp/AA0j
 bh=$dir/bh
 wt=$dir/wt/8TeV/HT2-unc/CT10nlo
 
