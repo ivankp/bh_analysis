@@ -1,8 +1,8 @@
 DB := ntuples.db
 
-.PHONY: all H AA clean
+.PHONY: all clean H AA remove_bad wt optimize
 
-all: $(DB) H AA
+all: $(DB) H AA remove_bad optimize
 
 $(DB):
 	./init $@
@@ -12,6 +12,18 @@ H:
 
 AA:
 	./add_bh_AAj $(DB)
+
+remove_bad:
+	./remove_bad.sh
+
+wt:
+	./add_wt $(DB)
+
+optimize:
+	@sqlite3 $(DB) '.dump' > ~tmp.sql
+	@sqlite3 ~tmp.db < ~tmp.sql
+	@mv ~tmp.db $(DB)
+	@rm -f ~tmp.sql ~tmp.db
 
 clean:
 	@rm -rv $(DB)

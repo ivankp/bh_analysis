@@ -7,6 +7,7 @@ if [ ! -f $db ]; then
     id INTEGER PRIMARY KEY,
     file TEXT,
     dir TEXT,
+    dset INTEGER,
     particle TEXT,
     njets INTEGER,
     process TEXT,
@@ -17,19 +18,15 @@ if [ ! -f $db ]; then
     jet_pt_cut REAL,
     jet_eta_cut REAL,
     other_cuts TEXT,
-    comment TEXT
+    sid INTEGER
   );"
   sqlite3 $db "create table wt (
     id INTEGER PRIMARY KEY,
+    bh_id INTEGER,
     file TEXT,
     dir TEXT,
-    bh_id INTEGER,
-    bh_file TEXT,
-    bh_dir TEXT,
     scales TEXT,
-    pdf TEXT,
-    jet_alg TEXT,
-    comment TEXT
+    pdf TEXT
   );"
   sqlite3 $db ".dump"
 fi
