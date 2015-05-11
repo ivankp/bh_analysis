@@ -91,13 +91,13 @@ private:
   }
 public:
   TLorentzVector p;
-  Double_t mass, pT, y, tau;
+  Double_t mass, pT, y, phi, tau;
   Jet(const TLorentzVector& _p, Double_t Y) noexcept
-  : p(_p), mass(p.M()), pT(p.Pt()), y(p.Rapidity()), tau(_tau(Y))
+  : p(_p), mass(p.M()), pT(p.Pt()), y(p.Rapidity()), phi(p.Phi()), tau(_tau(Y))
   { }
   Jet(const fastjet::PseudoJet& _p, Double_t Y) noexcept
   : p(_p.px(),_p.py(),_p.pz(),_p.E()),
-    mass(p.M()), pT(p.Pt()), y(p.Rapidity()), tau(_tau(Y))
+    mass(p.M()), pT(p.Pt()), y(p.Rapidity()), phi(p.Phi()), tau(_tau(Y))
   { }
 };
 // ******************************************************************
@@ -367,6 +367,8 @@ int main(int argc, char** argv)
   h_jj(jjpT_loose_VBF); h_jj(jjdy_loose_VBF);
   h_jj(jjpT_tight_VBF); h_jj(jjdy_tight_VBF);
 
+  hist_wt h_central_j_veto_dy( njets>2 ? "central_j_veto_dy" : string() );
+
   // Reading entries from the input TChain **************************
   Long64_t num_selected = 0, num_events = 0;
   Int_t prev_id = -1;
@@ -378,6 +380,7 @@ int main(int argc, char** argv)
   // variables
   Double_t jjpT_dy   = 0, jjdy_dy   = 0;
   Double_t jjpT_dphi = 0, jjdy_dphi = 0;
+  Double_t y_center  = 0;
 
   // LOOP
   for (Long64_t ent = ents.first, ent_end = ents.end(); ent < ent_end; ++ent) {
@@ -475,9 +478,8 @@ int main(int argc, char** argv)
 
     // Number of jets hists
     h_jets_N_excl.Fill(nj);
-    for (size_t i=0; i<=njetsR; i++) {
-      if (nj >= i) h_jets_N_incl.Fill(i);
-    }
+    for (size_t i=0, n=min(nj,njetsR); i<=n; i++)
+      h_jets_N_incl.Fill(i);
 
     // Do no process entries with fewer then njets
     if (nj < njets) continue;
@@ -485,28 +487,22 @@ int main(int argc, char** argv)
     // Increment selected entries
     ++num_selected;
 
-    size_t jjdy_1 = 1, jjdy_2 = 0;
+    size_t jymin = 0, jymax = 0;
 
     // find Δy
     if (njets>1) {
       // jjpT
       jjpT_dy = abs(jets[0].y - jets[1].y);
-      jjpT_dphi = fmod( abs(jets[0].p.Phi() - jets[1].p.Phi()), M_PI);
+      jjpT_dphi = fmod( abs(jets[0].phi - jets[1].phi), M_PI);
 
       // jjdy
-      jjdy_dy = jjpT_dy;
-      for (size_t i=2; i<nj; ++i) {
-        for (size_t j=0; j<i; ++j) {
-          const Double_t dy = abs(jets[i].y - jets[j].y);
-          if (dy > jjdy_dy) {
-            jjdy_dy = dy;
-            jjdy_1 = i;
-            jjdy_2 = j;
-          }
-        }
+      for (size_t j=1; j<nj; ++j) {
+        if (jets[j].y < jets[jymin].y) jymin = j;
+        if (jets[j].y > jets[jymax].y) jymax = j;
       }
-
-      jjdy_dphi = fmod( abs(jets[jjdy_1].p.Phi() - jets[jjdy_2].p.Phi()), M_PI);
+      jjdy_dy   = jets[jymax].y - jets[jymin].y;
+      jjdy_dphi = fmod( abs(jets[jymin].phi - jets[jymax].phi), M_PI);
+      y_center  = (jets[jymax].y + jets[jymin].y)/2;
     }
 
     // Fill histograms ************************************
@@ -568,8 +564,8 @@ int main(int argc, char** argv)
         if (H_jj_dphi>2.6) h_jjpT_tight_VBF.Fill( 0.5 );
       }
 
-      if (jjdy_1 != 1) {
-        jj = jets[jjdy_1].p + jets[jjdy_2].p;
+      if (jymin != 1) {
+        jj = jets[jymin].p + jets[jymax].p;
         jj_mass   = jj.M();
         H_jj_dphi = fmod( abs(H_phi - jj.Phi()), M_PI);
       }
@@ -578,7 +574,7 @@ int main(int argc, char** argv)
       h_H_jjdy_dy  .Fill( abs(H_y - jj.Rapidity()) );
       h_H_jjdy_dphi.Fill( H_jj_dphi );
       
-      h_H_jjdy_dy_avgyjj.Fill( abs(H_y - (jets[jjdy_1].y+jets[jjdy_2].y)/2) );
+      h_H_jjdy_dy_avgyjj.Fill( abs(H_y - y_center) );
 
       if (jjdy_dy>2.8 && jj_mass>400) {
         h_H_jjdy_dphi_VBF.Fill( H_jj_dphi );
@@ -586,8 +582,8 @@ int main(int argc, char** argv)
         if (H_jj_dphi>2.6) h_jjdy_tight_VBF.Fill( 0.5 );
       }
 
-      h_jjpT_N_jhj_excl.Fill( between(jets[0     ].y,H_y,jets[1     ].y) ? nj : 0 );
-      h_jjdy_N_jhj_excl.Fill( between(jets[jjdy_1].y,H_y,jets[jjdy_1].y) ? nj : 0 );
+      h_jjpT_N_jhj_excl.Fill( between(jets[0    ].y,H_y,jets[1    ].y) ? nj : 0 );
+      h_jjdy_N_jhj_excl.Fill( between(jets[jymin].y,H_y,jets[jymin].y) ? nj : 0 );
 
 
 		  // Calculation of phi_2 from arXiv:1001.3822  
@@ -639,6 +635,20 @@ int main(int argc, char** argv)
 		  }
 		
 		  h_H_jj_phi2.Fill(phi2);
+
+		  if (njets>2) {
+        Double_t y_distt, y_dists=100.;
+
+        for (size_t j=0; j<nj; ++j) {
+          if (j==jymin || j==jymax) continue;
+          y_distt = fabs(jets[j].y - y_center);
+          if (y_distt < y_dists) y_dists = y_distt;
+        }
+        // ydists is now the smallest distance between the centre of the
+        // tagging jets and any possible further jet
+        // (100 in case of no further jets)
+        h_central_j_veto_dy.FillIncl(y_dists);
+		  }
 
     } // END if (njets>1)
 

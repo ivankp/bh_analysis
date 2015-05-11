@@ -15,11 +15,11 @@ class BHEvent {
 public:
   Int_t           eid;
   Int_t           nparticle;
-  Float_t         px[BHMAXNP];   //[nparticle]
-  Float_t         py[BHMAXNP];   //[nparticle]
-  Float_t         pz[BHMAXNP];   //[nparticle]
-  Float_t         E[BHMAXNP];    //[nparticle]
-  Int_t           kf[BHMAXNP];   //[nparticle]
+  Float_t         px[BHMAXNP]; //[nparticle]
+  Float_t         py[BHMAXNP]; //[nparticle]
+  Float_t         pz[BHMAXNP]; //[nparticle]
+  Float_t         E [BHMAXNP]; //[nparticle]
+  Int_t           kf[BHMAXNP]; //[nparticle]
   Double_t        alphas;
   Double_t        weight;
   Double_t        weight2;
@@ -31,7 +31,7 @@ public:
   Double_t        fac_scale;
   Double_t        ren_scale;
   Int_t           nuwgt;
-  Double_t        usr_wgts[18];  //[nuwgt]
+  Double_t        usr_wgts[18]; //[nuwgt]
   Char_t          alphas_power;
   Char_t          part[2];
 

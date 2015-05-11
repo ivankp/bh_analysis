@@ -42,6 +42,14 @@ void hist_wt::Fill(Double_t x) noexcept {
   }
 }
 
+void hist_wt::FillIncl(Double_t x) noexcept {
+  const TH1* hist = get<0>(h.cbegin()->second);
+  const Int_t n = hist->GetNbinsX();
+  
+  for (Int_t i=hist->FindFixBin(x); i<=n; ++i)
+    Fill(hist->GetBinCenter(i));
+}
+
 void hist_wt::FillSumw2() noexcept {
   if (keep_sumw2) for (auto& _h : h) {
     for (auto it =get<1>(_h.second).begin();

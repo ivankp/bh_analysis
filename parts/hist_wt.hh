@@ -24,9 +24,10 @@ class hist_wt {
 public:
   hist_wt(const std::string& name);
   void Fill(Double_t x) noexcept;
+  void FillIncl(Double_t x) noexcept;
   void FillSumw2() noexcept;
   void AdoptSumw2() noexcept;
-
+  
   static std::shared_ptr<const csshists> css;
   static std::unordered_map<const weight*,TDirectory*> dirs;
   
