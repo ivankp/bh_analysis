@@ -28,5 +28,11 @@ if [ ! -f $db ]; then
     scales TEXT,
     pdf TEXT
   );"
+#  sqlite3 $db "create table hist (
+#    wt_id INTEGER,
+#    file TEXT,
+#    dir TEXT,
+#    jet TEXT
+#  );"
   sqlite3 $db ".dump"
 fi

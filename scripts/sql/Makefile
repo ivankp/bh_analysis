@@ -17,7 +17,10 @@ remove_bad:
 	./remove_bad.sh
 
 wt:
-	./add_wt $(DB)
+	./add_wt.py $(DB)
+
+hist:
+	./add_hist.py $(DB)
 
 optimize:
 	@sqlite3 $(DB) '.dump' > ~tmp.sql

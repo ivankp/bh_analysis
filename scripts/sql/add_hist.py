@@ -6,19 +6,18 @@ if len(sys.argv) != 2 :
   print 'usage: %s ntuples.db' % sys.argv[0]
   sys.exit(1)
 
-_dir='/msu/data/t3work2/ivanp/wt'
+_dir='/msu/data/t3work2/ivanp/hist'
 
 db = sqlite3.connect(sys.argv[1])
 cur = db.cursor()
 
-cur.execute("select id, particle, njets, energy, part, sid, dset FROM bh")
+cur.execute("select id, particle, njets, energy, part, sid, dset FROM wt")
 
 pnj = ""
 
-for scales in ['HT2-mH-cmp']:
-  for pdf in ['CT10nlo']:
+  for jet in ['AntiKt4', 'AntiKt5']:
 
-    for bh in cur.fetchall():
+    for wt in cur.fetchall():
       f = '%s%dj_%dTeV_%s_%s_%s_%s.root' % ( bh[1:-1] + (scales,pdf) )
 
       _pnj = '%s%dj' % bh[1:3]
