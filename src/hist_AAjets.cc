@@ -45,6 +45,11 @@ template<typename T> inline bool between(T a, T x, T b) {
   return ( (a<=x) && (x<=b) );
 }
 
+Double_t EPSTENSOR(const TLorentzVector& p2, const TLorentzVector& p4) noexcept {
+  return p2.Px()*p4.Py() - p2.Py()*p4.Px() +
+         p2.Px()*p4.Py() - p2.Py()*p4.Px();
+}
+
 // ******************************************************************
 struct Jet {
 private:
@@ -54,13 +59,13 @@ private:
   }
 public:
   TLorentzVector p;
-  Double_t mass, pT, y, tau;
+  Double_t mass, pT, y, phi, tau;
   Jet(const TLorentzVector& _p, Double_t Y) noexcept
-  : p(_p), mass(p.M()), pT(p.Pt()), y(p.Rapidity()), tau(_tau(Y))
+  : p(_p), mass(p.M()), pT(p.Pt()), y(p.Rapidity()), phi(p.Phi()), tau(_tau(Y))
   { }
   Jet(const fastjet::PseudoJet& _p, Double_t Y) noexcept
   : p(_p.px(),_p.py(),_p.pz(),_p.E()),
-    mass(p.M()), pT(p.Pt()), y(p.Rapidity()), tau(_tau(Y))
+    mass(p.M()), pT(p.Pt()), y(p.Rapidity()), phi(p.Phi()), tau(_tau(Y))
   { }
 };
 // ******************************************************************
@@ -72,6 +77,7 @@ int main(int argc, char** argv)
   string output_file, css_file, jet_alg;
   size_t njets;
   double jet_pt_cut, jet_eta_cut;
+  bool no_AA_mass_cut;
   int_range<Long64_t> ents;
   bool counter_newline, quiet;
 
@@ -104,6 +110,8 @@ int main(int argc, char** argv)
        "jet pT cut in GeV")
       ("jet-eta-cut", po::value<double>(&jet_eta_cut)->default_value(4.4,"4.4"),
        "jet eta cut")
+      ("no-AA-mass-cut", po::bool_switch(&no_AA_mass_cut),
+       "turn off diphoton mass cut")
       ("style,s", po::value<string>(&css_file)
        ->default_value(CONFDIR"/AAjets.css","AAjets.css"),
        "CSS style file for histogram binning and formating")
@@ -304,10 +312,11 @@ int main(int argc, char** argv)
   h_jj(jjpT_dphi); h_jj(jjdy_dphi);
   h_jj(AA_jjpT_dphi_VBF); h_jj(AA_jjdy_dphi_VBF);
 
-  h_jj(jjpT_mass);    h_jj(jjdy_mass);
+  h_jj(jjpT_mass);   h_jj(jjdy_mass);
   h_jj(AAjjpT_mass);  h_jj(AAjjdy_mass);
-  h_jj(AA_jjpT_dy);   h_jj(AA_jjdy_dy);
-  h_jj(AA_jjpT_dphi); h_jj(AA_jjdy_dphi);
+  h_jj(AA_jjpT_dy);   h_jj(AA_jjpT_dy_avgyjj);
+  h_jj(AA_jjdy_dy);   h_jj(AA_jjdy_dy_avgyjj);
+  h_jj(AA_jjpT_dphi); h_jj(AA_jjdy_dphi); h_jj(AA_jj_phi2);
 
   h_jj(jjpT_N_jhj_excl); h_jj(jjdy_N_jhj_excl);
 
@@ -330,6 +339,8 @@ int main(int argc, char** argv)
   h_jj(jjpT_loose_VBF); h_jj(jjdy_loose_VBF);
   h_jj(jjpT_tight_VBF); h_jj(jjdy_tight_VBF);
 
+  hist_wt h_central_j_veto_dy( njets>2 ? "central_j_veto_dy" : string() );
+
   // Reading entries from the input TChain **************************
   Long64_t num_selected = 0, num_events = 0;
   Int_t prev_id = -1;
@@ -341,6 +352,7 @@ int main(int argc, char** argv)
   // variables
   Double_t jjpT_dy   = 0, jjdy_dy   = 0;
   Double_t jjpT_dphi = 0, jjdy_dphi = 0;
+  Double_t y_center  = 0;
 
   // LOOP
   for (Long64_t ent = ents.first, ent_end = ents.end(); ent < ent_end; ++ent) {
@@ -399,7 +411,8 @@ int main(int argc, char** argv)
 
     const Double_t AA_mass = AA.M();        // diphoton Mass
 
-    if ( AA_mass < 115 || 135 < AA_mass ) continue;
+    if (!no_AA_mass_cut)
+      if ( AA_mass < 115 || 135 < AA_mass ) continue;
 
     const Double_t AA_pT   = AA.Pt();       // diphoton Pt
     const Double_t AA_y    = AA.Rapidity(); // diphoton Rapidity
@@ -483,28 +496,22 @@ int main(int argc, char** argv)
     // Increment selected entries
     ++num_selected;
 
-    size_t jjdy_1 = 1, jjdy_2 = 0;
+    size_t jymin = 1, jymax = 0;
 
-    // find Δy
+    // find Δy and Δφ
     if (njets>1) {
       // jjpT
       jjpT_dy = abs(jets[0].y - jets[1].y);
-      jjpT_dphi = fmod( abs(jets[0].p.Phi() - jets[1].p.Phi()), M_PI);
+      jjpT_dphi = fmod( abs(jets[0].phi - jets[1].phi), M_PI);
 
       // jjdy
-      jjdy_dy = jjpT_dy;
-      for (size_t i=2; i<nj; ++i) {
-        for (size_t j=0; j<i; ++j) {
-          const Double_t dy = abs(jets[i].y - jets[j].y);
-          if (dy > jjdy_dy) {
-            jjdy_dy = dy;
-            jjdy_1 = i;
-            jjdy_2 = j;
-          }
-        }
+      for (size_t j=1; j<nj; ++j) {
+        if (jets[j].y < jets[jymin].y) jymin = j;
+        if (jets[j].y > jets[jymax].y) jymax = j;
       }
-
-      jjdy_dphi = fmod( abs(jets[jjdy_1].p.Phi() - jets[jjdy_2].p.Phi()), M_PI);
+      jjdy_dy   = jets[jymax].y - jets[jymin].y;
+      jjdy_dphi = fmod( abs(jets[jymin].phi - jets[jymax].phi), M_PI);
+      y_center  = (jets[jymax].y + jets[jymin].y)/2;
     }
 
     // Fill histograms ************************************
@@ -561,6 +568,8 @@ int main(int argc, char** argv)
       h_AAjjpT_mass .Fill( (AA + jj).M() );
       h_AA_jjpT_dy  .Fill( abs(AA_y - jj.Rapidity()) );
       h_AA_jjpT_dphi.Fill( AA_jj_dphi );
+      
+      h_AA_jjpT_dy_avgyjj.Fill( abs(AA_y - (jets[0].y+jets[1].y)/2) );
 
       if (jjpT_dy>2.8 && jj_mass>400) {
         h_AA_jjpT_dphi_VBF.Fill( AA_jj_dphi );
@@ -568,15 +577,16 @@ int main(int argc, char** argv)
         if (AA_jj_dphi>2.6) h_jjpT_tight_VBF.Fill( 0.5 );
       }
 
-      if (jjdy_1 != 1) {
-        jj = jets[jjdy_1].p + jets[jjdy_2].p;
-        jj_mass   = jj.M();
-        AA_jj_dphi = fmod( abs(AA_phi - jj.Phi()), M_PI);
-      }
+      jj = jets[jymin].p + jets[jymax].p;
+      jj_mass   = jj.M();
+      AA_jj_dphi = fmod( abs(AA_phi - jj.Phi()), M_PI);
+
       h_jjdy_mass  .Fill( jj_mass );
       h_AAjjdy_mass .Fill( (AA + jj).M() );
       h_AA_jjdy_dy  .Fill( abs(AA_y - jj.Rapidity()) );
       h_AA_jjdy_dphi.Fill( AA_jj_dphi );
+      
+      h_AA_jjdy_dy_avgyjj.Fill( abs(AA_y - y_center) );
 
       if (jjdy_dy>2.8 && jj_mass>400) {
         h_AA_jjdy_dphi_VBF.Fill( AA_jj_dphi );
@@ -584,9 +594,72 @@ int main(int argc, char** argv)
         if (AA_jj_dphi>2.6) h_jjdy_tight_VBF.Fill( 0.5 );
       }
 
-      h_jjpT_N_jhj_excl.Fill( between(jets[0     ].y,AA_y,jets[1     ].y) ? nj : 0 );
-      h_jjdy_N_jhj_excl.Fill( between(jets[jjdy_1].y,AA_y,jets[jjdy_1].y) ? nj : 0 );
-    }
+      h_jjpT_N_jhj_excl.Fill( between(jets[0    ].y,AA_y,jets[1    ].y) ? nj : 0 );
+      h_jjdy_N_jhj_excl.Fill( between(jets[jymin].y,AA_y,jets[jymin].y) ? nj : 0 );
+
+
+		  // Calculation of phi_2 from arXiv:1001.3822  
+		  // phi_2 = azimuthal angle between the vector sum of jets 
+		  // forward and jets backward of the Higgs boson
+
+		  TLorentzVector vsumf(0.,0.,0.,0.);
+		  TLorentzVector vsumb(0.,0.,0.,0.);
+		
+		  Double_t yb = numeric_limits<Double_t>::max();
+		  Double_t yf = -yb;
+
+		  const TLorentzVector *jb = nullptr, *jf = nullptr;
+		
+		  Double_t f_nonzero = false, b_nonzero = false;
+		  for (const auto& j : jets) {
+		    if (j.y > AA_y) { vsumf += j.p; f_nonzero = true; }
+		    else            { vsumb += j.p; b_nonzero = true; }
+
+		    // find most forward and backward jets
+		    if (j.y > yf) { jf = &j.p; yf = j.y; }
+		    if (j.y < yb) { jb = &j.p; yb = j.y; }
+		  }
+
+		  Double_t phi2;
+		  // Calculate phi_2
+		  if (f_nonzero && b_nonzero) {
+		    phi2 = acos((vsumb.Px()*vsumf.Px()+vsumb.Py()*vsumf.Py())/
+			        (sqrt(vsumb.Px()*vsumb.Px()+vsumb.Py()*vsumb.Py())*
+			         sqrt(vsumf.Px()*vsumf.Px()+vsumf.Py()*vsumf.Py()))); 
+		    if (EPSTENSOR(vsumb,vsumf)<0.) phi2 *= -1.;
+
+		  } else if (!f_nonzero) {
+		    vsumb -= *jf;
+		    phi2 = acos((vsumb.Px()*jf->Px()+vsumb.Py()*jf->Py())/
+			        (sqrt(vsumb.Px()*vsumb.Px()+vsumb.Py()*vsumb.Py())*
+			         sqrt(jf->Px()*jf->Px()+jf->Py()*jf->Py())));
+		    if (EPSTENSOR(vsumb,*jf)<0.) phi2 *= -1.;
+
+		  } else { 
+		    vsumf -= *jb;
+		    phi2 = acos((jb->Px()*vsumf.Px()+jb->Py()*vsumf.Py())/
+			        (sqrt(jb->Px()*jb->Px()+jb->Py()*jb->Py())*
+			         sqrt(vsumf.Px()*vsumf.Px()+vsumf.Py()*vsumf.Py())));  
+		    if (EPSTENSOR(*jb,vsumf)<0.) phi2 *= -1.;
+		  }
+		
+		  h_AA_jj_phi2.Fill(phi2);
+
+		  if (njets>2) {
+        Double_t y_distt, y_dists=100.;
+
+        for (size_t j=0; j<nj; ++j) {
+          if (j==jymin || j==jymax) continue;
+          y_distt = fabs(jets[j].y - y_center);
+          if (y_distt < y_dists) y_dists = y_distt;
+        }
+        // ydists is now the smallest distance between the centre of the
+        // tagging jets and any possible further jet
+        // (100 in case of no further jets)
+        h_central_j_veto_dy.FillIncl(y_dists);
+		  }
+
+    } // END if (njets>1)
 
     Double_t jets_HT = 0, jets_tau_max = 0, jets_tau_sum = 0;
     for (const auto& jet : jets) {

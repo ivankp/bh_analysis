@@ -489,7 +489,7 @@ int main(int argc, char** argv)
 
     size_t jymin = 0, jymax = 0;
 
-    // find Δy
+    // find Δy and Δφ
     if (njets>1) {
       // jjpT
       jjpT_dy = abs(jets[0].y - jets[1].y);
@@ -564,11 +564,10 @@ int main(int argc, char** argv)
         if (H_jj_dphi>2.6) h_jjpT_tight_VBF.Fill( 0.5 );
       }
 
-      if (jymin != 1) {
-        jj = jets[jymin].p + jets[jymax].p;
-        jj_mass   = jj.M();
-        H_jj_dphi = fmod( abs(H_phi - jj.Phi()), M_PI);
-      }
+      jj = jets[jymin].p + jets[jymax].p;
+      jj_mass   = jj.M();
+      H_jj_dphi = fmod( abs(H_phi - jj.Phi()), M_PI);
+
       h_jjdy_mass  .Fill( jj_mass );
       h_Hjjdy_mass .Fill( (higgs + jj).M() );
       h_H_jjdy_dy  .Fill( abs(H_y - jj.Rapidity()) );
@@ -607,9 +606,6 @@ int main(int argc, char** argv)
 		    if (j.y > yf) { jf = &j.p; yf = j.y; }
 		    if (j.y < yb) { jb = &j.p; yb = j.y; }
 		  }
-
-		  // test if the Higgs boson is between the jets
-		  // const bool higgsBetween = (yb < H_y && H_y < yf);
 
 		  Double_t phi2;
 		  // Calculate phi_2

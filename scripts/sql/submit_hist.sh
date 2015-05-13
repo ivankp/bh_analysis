@@ -57,7 +57,7 @@ Arguments = -j ${bh[4]} --bh=${bh[0]}/${bh[1]} --wt=${wt[0]}/${wt[1]} -o $hist -
 Queue
 " | condor_submit - > /dev/null
 
-#sleep 5
+sleep 5
 
 done
 
