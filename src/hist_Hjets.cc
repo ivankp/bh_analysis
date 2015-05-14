@@ -30,6 +30,7 @@
 #include "hist_wt.hh"
 #include "fj_jetdef.hh"
 #include "int_range.hh"
+#include "real_range.hh"
 #include "timed_counter.hh"
 #include "catstr.hh"
 
@@ -46,40 +47,14 @@ template<typename T> inline bool between(T a, T x, T b) noexcept {
   return ( (a<=x) && (x<=b) );
 }
 
-Double_t EPSTENSOR(const TLorentzVector& p2, const TLorentzVector& p4) noexcept {
-/*
-	constexpr TLorentzVector p1(0.,0., 1.,1.);
-	constexpr TLorentzVector p2(0.,0.,-1.,1.);
+inline Double_t fphi2(const TLorentzVector& b, const TLorentzVector& f) noexcept {
+  const Double_t bx=b.Px(), by=b.Py(), fx=f.Px(), fy=f.Py();
 
-  return -std::complex<double>(0.,1.)*(
-      p1.x()*p2.y()*p3.z()*p4.E()
-    - p1.x()*p2.y()*p3.E()*p4.z()
-    - p1.x()*p2.z()*p3.y()*p4.E()
-    + p1.x()*p2.z()*p3.E()*p4.y()
-    + p1.x()*p2.E()*p3.y()*p4.z()
-    - p1.x()*p2.E()*p3.z()*p4.y()
-    - p1.y()*p2.x()*p3.z()*p4.E()
-    + p1.y()*p2.x()*p3.E()*p4.z()
-    + p1.y()*p2.z()*p3.x()*p4.E()
-    - p1.y()*p2.z()*p3.E()*p4.x()
-    - p1.y()*p2.E()*p3.x()*p4.z()
-    + p1.y()*p2.E()*p3.z()*p4.x()
-    + p1.z()*p2.x()*p3.y()*p4.E()
-    - p1.z()*p2.x()*p3.E()*p4.y()
-    - p1.z()*p2.y()*p3.x()*p4.E()
-    + p1.z()*p2.y()*p3.E()*p4.x()
-    + p1.z()*p2.E()*p3.x()*p4.y()
-    - p1.z()*p2.E()*p3.y()*p4.x()
-    - p1.E()*p2.x()*p3.y()*p4.z()
-    + p1.E()*p2.x()*p3.z()*p4.y()
-    + p1.E()*p2.y()*p3.x()*p4.z()
-    - p1.E()*p2.y()*p3.z()*p4.x()
-    - p1.E()*p2.z()*p3.x()*p4.y()
-    + p1.E()*p2.z()*p3.y()*p4.x()
+  const Double_t phi2 = acos( ( bx*fx+by*fy ) /
+    sqrt(bx*bx+by*by) * sqrt(fx*fx+fy*fy)
   );
-*/
-  return p2.Px()*p4.Py() - p2.Py()*p4.Px() +
-         p2.Px()*p4.Py() - p2.Py()*p4.Px();
+  if ( ( bx*fy - by*fx ) < 0.) return -phi2;
+  else return phi2;
 }
 
 // ******************************************************************
@@ -109,16 +84,19 @@ int main(int argc, char** argv)
   string output_file, css_file, jet_alg;
   size_t njets;
   double jet_pt_cut, jet_eta_cut;
+  real_range<Double_t> AA_mass_cut;
   int_range<Long64_t> ents;
-  bool counter_newline, quiet;
+  bool AAntuple, counter_newline, quiet;
 
   bool sj_given = false, wt_given = false;
+  bool apply_AA_mass_cut = false;
 
   try {
     // General Options ------------------------------------
     po::options_description desc("Options");
     desc.add_options()
       ("help,h", "produce help message")
+
       ("bh", po::value< vector<string> >(&bh_files)->required(),
        "*add input BlackHat root file")
       ("sj", po::value< vector<string> >(&sj_files),
@@ -127,20 +105,28 @@ int main(int argc, char** argv)
        "add input weights root file")
       ("output,o", po::value<string>(&output_file)->required(),
        "*output root file with histograms")
-      ("njets,j", po::value<size_t>(&njets)->required(),
-       "*minimum number of jets per ntuple entry")
-      ("cluster,c", po::value<string>(&jet_alg)->default_value("AntiKt4"),
-       "jet clustering algorithm: e.g. antikt4, kt6\n"
-       "without --sj: select FastJet algorithm\n"
-       "with --sj: read jets from SpartyJet ntuple")
+
       ("weight,w", po::value<vector<string>>(&weights),
        "weight branchs; if skipped:\n"
        "  without --wt: ntuple weight2 is used\n"
        "  with --wt: all weights from wt files")
+
+      ("njets,j", po::value<size_t>(&njets)->required(),
+       "*minimum number of jets per ntuple entry")
+      ("jet-alg,c", po::value<string>(&jet_alg)->default_value("AntiKt4"),
+       "jet clustering algorithm: e.g. antikt4, kt6\n"
+       "without --sj: select FastJet algorithm\n"
+       "with --sj: read jets from SpartyJet ntuple")
       ("jet-pt-cut", po::value<double>(&jet_pt_cut)->default_value(30.,"30"),
        "jet pT cut in GeV")
       ("jet-eta-cut", po::value<double>(&jet_eta_cut)->default_value(4.4,"4.4"),
        "jet eta cut")
+
+      ("AA", po::bool_switch(&AAntuple),
+       "make Higgs from diphoton\nand produce AA histograms")
+      ("AA-mass-cut", po::value<real_range<Double_t>>(&AA_mass_cut),
+       "apply a mass cut to the diphoton,\ne.g. 115:135")
+
       ("style,s", po::value<string>(&css_file)
        ->default_value(CONFDIR"/Hjets.css","Hjets.css"),
        "CSS style file for histogram binning and formating")
@@ -161,6 +147,7 @@ int main(int argc, char** argv)
     po::notify(vm);
     if (vm.count("sj")) sj_given = true;
     if (vm.count("wt")) wt_given = true;
+    if (vm.count("AA_mass_cut")) apply_AA_mass_cut = true;
   }
   catch(exception& e) {
     cerr << "\033[31mError: " <<  e.what() <<"\033[0m"<< endl;
@@ -289,7 +276,9 @@ int main(int argc, char** argv)
   // Book histograms ************************************************
   #define h_(name) hist_wt h_##name(#name);
 
-  #define h_jj(name) hist_wt h_##name( njets>1 ? #name : string() );
+  #define h_opt(name,opt) hist_wt h_##name( opt ? #name : string() );
+
+  #define h_jj(name) h_opt(name, njets>1)
 
   #define h_jet_var(var) \
     vector<hist_wt> h_jet_##var; \
@@ -312,6 +301,10 @@ int main(int argc, char** argv)
   TH1* h_N = hist_css->mkhist("N");
 
   h_(H_pT); h_(H_y); h_(H_mass);
+
+  h_opt(AA_cos_theta_star, AAntuple);
+  h_opt(AA_pTt, AAntuple);
+  h_opt(AA_dy,  AAntuple);
 
   h_jet_var(pT);
 
@@ -367,7 +360,7 @@ int main(int argc, char** argv)
   h_jj(jjpT_loose_VBF); h_jj(jjdy_loose_VBF);
   h_jj(jjpT_tight_VBF); h_jj(jjdy_tight_VBF);
 
-  hist_wt h_central_j_veto_dy( njets>2 ? "central_j_veto_dy" : string() );
+  h_opt(central_j_veto_dy, njets>2);
 
   // Reading entries from the input TChain **************************
   Long64_t num_selected = 0, num_events = 0;
@@ -388,20 +381,42 @@ int main(int argc, char** argv)
     tree->GetEntry(ent);
 
     if (event.nparticle>BHMAXNP) {
-      cerr << "More particles in the entry then BHMAXNP" << endl
+      cerr << "\033[31mMore particles in the entry then BHMAXNP\033[0m" << endl
            << "Increase array length to " << event.nparticle << endl;
       exit(1);
     }
 
-    // Find Higgs
-    Int_t hi = 0; // Higgs index
-    while (hi<event.nparticle) {
-      if (event.kf[hi]==25) break;
-      else ++hi;
-    }
-    if (hi==event.nparticle) {
-      cerr << "No Higgs in event " << ent << endl;
-      continue;
+    // Find Higgs or AA
+    Int_t Hi = 0, Ai1 = -1, Ai2 = -1; // Higgs or phton indices
+
+    if (AAntuple) { // AA
+
+      for (Int_t i=0; i<event.nparticle; ++i) {
+        if (event.kf[i]==22) {
+          if (Ai1==-1) Ai1 = i;
+          else {
+            if (Ai2==-1) Ai2 = i;
+            break;
+          }
+        }
+      }
+      if (Ai2==-1) {
+        cerr << "\033[31mEvent " << ent
+             << " doesn't have 2 photons\033[0m" << endl;
+        continue;
+      }
+    
+    } else { // Higgs
+
+      while (Hi<event.nparticle) {
+        if (event.kf[Hi]==25) break;
+        else ++Hi;
+      }
+      if (Hi==event.nparticle) {
+        cerr << "\033[31mNo Higgs in event " << ent <<"\033[0m"<< endl;
+        continue;
+      }
+
     }
 
     // Count number of events (not entries)
@@ -413,13 +428,39 @@ int main(int argc, char** argv)
       for (auto h : hist_wt::all) h->FillSumw2();
     }
 
-    // Higgs 4-vector
-    const TLorentzVector higgs(event.px[hi],event.py[hi],event.pz[hi],event.E[hi]);
+    // Higgs and AA 4-vectors
+    const TLorentzVector *A1(nullptr), *A2(nullptr), *higgs;
 
-    const Double_t H_mass = higgs.M();        // Higgs Mass
-    const Double_t H_pT   = higgs.Pt();       // Higgs Pt
-    const Double_t H_y    = higgs.Rapidity(); // Higgs Rapidity
-    const Double_t H_phi  = higgs.Phi();      // Higgs Phi
+    if (AAntuple) {
+      A1 = new const TLorentzVector(
+           event.px[Ai1], event.py[Ai1], event.pz[Ai1], event.E [Ai1]);
+      A2 = new const TLorentzVector(
+           event.px[Ai2], event.py[Ai2], event.pz[Ai2], event.E [Ai2]);
+
+      // Photon cuts
+      if ( A1->Pt() > A2->Pt() ) {
+        if ( A1->Et() < 43.75 ) continue;
+        if ( A2->Et() < 31.35 ) continue;
+      } else {
+        if ( A2->Et() < 43.75 ) continue;
+        if ( A1->Et() < 31.35 ) continue;
+      }
+      if ( A1->Eta() > 2.37 ) continue;
+      if ( A2->Eta() > 2.37 ) continue;
+           
+      higgs = new const TLorentzVector(*A1+*A2);
+
+    } else {
+      higgs = new const TLorentzVector(
+              event.px[Hi],event.py[Hi], event.pz[Hi],event.E[Hi]);
+    }
+    
+    const Double_t H_mass = higgs->M(); // Higgs Mass
+
+    if (apply_AA_mass_cut)
+      if ( H_mass < AA_mass_cut.min || AA_mass_cut.max < H_mass ) continue;
+
+    const Double_t H_y = higgs->Rapidity(); // Higgs Rapidity
 
     // Jet clustering *************************************
     vector<Jet> jets;
@@ -443,7 +484,10 @@ int main(int argc, char** argv)
       particles.reserve(event.nparticle-1);
 
       for (Int_t i=0; i<event.nparticle; ++i) {
-        if (i==hi) continue;
+        if (AAntuple) {
+          if (i==Ai1) continue;
+          if (i==Ai2) continue;
+        } else if (i==Hi) continue;
         particles.emplace_back(
           event.px[i],event.py[i],event.pz[i],event.E[i]
         );
@@ -486,6 +530,13 @@ int main(int argc, char** argv)
 
     // Increment selected entries
     ++num_selected;
+    
+    // ****************************************************
+
+    const Double_t H_pT  = higgs->Pt();  // Higgs Pt
+    const Double_t H_phi = higgs->Phi(); // Higgs Phi
+
+    // ****************************************************
 
     size_t jymin = 0, jymax = 0;
 
@@ -510,7 +561,7 @@ int main(int argc, char** argv)
     h_H_pT  .Fill(H_pT);
     h_H_y   .Fill(H_y);
 
-    TLorentzVector Hnj = higgs;
+    TLorentzVector Hnj = *higgs;
     for (size_t j=0, _nj=min(nj,njetsR); j<_nj; ++j) {
       h_jet_mass[j].Fill(jets[j].mass);
       h_jet_pT  [j].Fill(jets[j].pT  );
@@ -552,7 +603,7 @@ int main(int argc, char** argv)
       Double_t jj_mass = jj.M();
       Double_t H_jj_dphi = fmod( abs(H_phi - jj.Phi()), M_PI);
       h_jjpT_mass  .Fill( jj_mass );
-      h_HjjpT_mass .Fill( (higgs + jj).M() );
+      h_HjjpT_mass .Fill( (*higgs + jj).M() );
       h_H_jjpT_dy  .Fill( abs(H_y - jj.Rapidity()) );
       h_H_jjpT_dphi.Fill( H_jj_dphi );
       
@@ -569,7 +620,7 @@ int main(int argc, char** argv)
       H_jj_dphi = fmod( abs(H_phi - jj.Phi()), M_PI);
 
       h_jjdy_mass  .Fill( jj_mass );
-      h_Hjjdy_mass .Fill( (higgs + jj).M() );
+      h_Hjjdy_mass .Fill( (*higgs + jj).M() );
       h_H_jjdy_dy  .Fill( abs(H_y - jj.Rapidity()) );
       h_H_jjdy_dphi.Fill( H_jj_dphi );
       
@@ -607,32 +658,22 @@ int main(int argc, char** argv)
 		    if (j.y < yb) { jb = &j.p; yb = j.y; }
 		  }
 
-		  Double_t phi2;
 		  // Calculate phi_2
+		  Double_t phi2;
 		  if (f_nonzero && b_nonzero) {
-		    phi2 = acos((vsumb.Px()*vsumf.Px()+vsumb.Py()*vsumf.Py())/
-			        (sqrt(vsumb.Px()*vsumb.Px()+vsumb.Py()*vsumb.Py())*
-			         sqrt(vsumf.Px()*vsumf.Px()+vsumf.Py()*vsumf.Py()))); 
-		    if (EPSTENSOR(vsumb,vsumf)<0.) phi2 *= -1.;
-
+		    phi2 = fphi2(vsumb,vsumf);
 		  } else if (!f_nonzero) {
 		    vsumb -= *jf;
-		    phi2 = acos((vsumb.Px()*jf->Px()+vsumb.Py()*jf->Py())/
-			        (sqrt(vsumb.Px()*vsumb.Px()+vsumb.Py()*vsumb.Py())*
-			         sqrt(jf->Px()*jf->Px()+jf->Py()*jf->Py())));
-		    if (EPSTENSOR(vsumb,*jf)<0.) phi2 *= -1.;
-
+		    phi2 = fphi2(vsumb,*jf);
 		  } else { 
 		    vsumf -= *jb;
-		    phi2 = acos((jb->Px()*vsumf.Px()+jb->Py()*vsumf.Py())/
-			        (sqrt(jb->Px()*jb->Px()+jb->Py()*jb->Py())*
-			         sqrt(vsumf.Px()*vsumf.Px()+vsumf.Py()*vsumf.Py())));  
-		    if (EPSTENSOR(*jb,vsumf)<0.) phi2 *= -1.;
+		    phi2 = fphi2(*jb,vsumf);
 		  }
 		
 		  h_H_jj_phi2.Fill(phi2);
 
 		  if (njets>2) {
+        // Third photon veto
         Double_t y_distt, y_dists=100.;
 
         for (size_t j=0; j<nj; ++j) {
@@ -645,6 +686,23 @@ int main(int argc, char** argv)
         // (100 in case of no further jets)
         h_central_j_veto_dy.FillIncl(y_dists);
 		  }
+		  
+		  // Diphoton variables and histograms
+		  if (AAntuple) {
+		  
+	      // |costheta*| from 1307.1432
+        const Double_t cts = abs(sinh(A1->Eta()-A2->Eta())) /
+                						 sqrt(1.+sq(H_pT/H_mass)) *
+                						 2.*A1->Pt()*A2->Pt()/sq(H_mass);
+
+        const Double_t AA_pTt =
+          fabs(A1->Px()*A2->Py()-A2->Px()*A1->Py()) / ((*A1-*A2).Pt()*2);
+
+        h_AA_pTt.Fill(AA_pTt);
+        h_AA_dy .Fill( fabs(A1->Rapidity() - A2->Rapidity()) );
+        h_AA_cos_theta_star.Fill(cts);
+        
+		  } // END AA
 
     } // END if (njets>1)
 
