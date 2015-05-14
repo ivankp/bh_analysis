@@ -360,6 +360,7 @@ int main(int argc, char** argv)
   h_jj(jjpT_loose_VBF); h_jj(jjfb_loose_VBF);
   h_jj(jjpT_tight_VBF); h_jj(jjfb_tight_VBF);
 
+  h_opt(jjpT_j_dy_veto, njets>2);
   h_opt(jjfb_j_dy_veto, njets>2);
 
   // Reading entries from the input TChain **************************
@@ -373,7 +374,7 @@ int main(int argc, char** argv)
   // variables
   Double_t jjpT_dy   = 0, jjfb_dy   = 0;
   Double_t jjpT_dphi = 0, jjfb_dphi = 0;
-  Double_t y_center  = 0;
+  Double_t jjfb_ycenter = 0, jjpT_ycenter = 0;
 
   // LOOP
   for (Long64_t ent = ents.first, ent_end = ents.end(); ent < ent_end; ++ent) {
@@ -545,6 +546,7 @@ int main(int argc, char** argv)
       // jjpT
       jjpT_dy = abs(jets[0].y - jets[1].y);
       jjpT_dphi = fmod( abs(jets[0].phi - jets[1].phi), M_PI);
+      jjpT_ycenter = (jets[0].y + jets[1].y)/2;
 
       // jjfb
       for (size_t j=1; j<nj; ++j) {
@@ -553,7 +555,7 @@ int main(int argc, char** argv)
       }
       jjfb_dy   = jets[jymax].y - jets[jymin].y;
       jjfb_dphi = fmod( abs(jets[jymin].phi - jets[jymax].phi), M_PI);
-      y_center  = (jets[jymax].y + jets[jymin].y)/2;
+      jjfb_ycenter = (jets[jymax].y + jets[jymin].y)/2;
     }
 
     // Fill histograms ************************************
@@ -607,7 +609,7 @@ int main(int argc, char** argv)
       h_H_jjpT_dy  .Fill( abs(H_y - jj.Rapidity()) );
       h_H_jjpT_dphi.Fill( H_jj_dphi );
       
-      h_H_jjpT_dy_avgyjj.Fill( abs(H_y - (jets[0].y+jets[1].y)/2) );
+      h_H_jjpT_dy_avgyjj.Fill( abs(H_y - jjpT_ycenter) );
 
       if (jjpT_dy>2.8 && jj_mass>400) {
         h_H_jjpT_dphi_VBF.Fill( H_jj_dphi );
@@ -624,7 +626,7 @@ int main(int argc, char** argv)
       h_H_jjfb_dy  .Fill( abs(H_y - jj.Rapidity()) );
       h_H_jjfb_dphi.Fill( H_jj_dphi );
       
-      h_H_jjfb_dy_avgyjj.Fill( abs(H_y - y_center) );
+      h_H_jjfb_dy_avgyjj.Fill( abs(H_y - jjfb_ycenter) );
 
       if (jjfb_dy>2.8 && jj_mass>400) {
         h_H_jjfb_dphi_VBF.Fill( H_jj_dphi );
@@ -673,18 +675,23 @@ int main(int argc, char** argv)
 		  h_H_jj_phi2.Fill(phi2);
 
 		  if (njets>2) {
-        // Third photon veto
-        Double_t y_distt, y_dists=100.;
-
-        for (size_t j=0; j<nj; ++j) {
-          if (j==jymin || j==jymax) continue;
-          y_distt = fabs(jets[j].y - y_center);
-          if (y_distt < y_dists) y_dists = y_distt;
-        }
+        // Third photon veto:
         // ydists is now the smallest distance between the centre of the
         // tagging jets and any possible further jet
-        // (100 in case of no further jets)
+        Double_t y_distt, y_dists = 100.;
+        for (size_t j=0; j<nj; ++j) {
+          if (j==jymin || j==jymax) continue;
+          y_distt = fabs(jets[j].y - jjfb_ycenter);
+          if (y_distt < y_dists) y_dists = y_distt;
+        }
         h_jjfb_j_dy_veto.FillIncl(y_dists);
+        
+        y_dists = 100.;
+        for (size_t j=2; j<nj; ++j) {
+          y_distt = fabs(jets[j].y - jjpT_ycenter);
+          if (y_distt < y_dists) y_dists = y_distt;
+        }
+        h_jjpT_j_dy_veto.FillIncl(y_dists);
 		  }
 		  
 		  // Diphoton variables and histograms
