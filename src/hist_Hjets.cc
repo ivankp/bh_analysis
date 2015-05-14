@@ -325,21 +325,21 @@ int main(int argc, char** argv)
   hist_wt h_jjpT_dy_nj_excl ( njets>1 ? cat("jjpT_dy_",njets, "j_excl") : string() ),
           h_jjpT_dy_nRj_excl( njets>1 ? cat("jjpT_dy_",njetsR,"j_excl") : string() );
 
-  h_jj(jjdy_dy);
-  hist_wt h_jjdy_dy_nj_excl ( njets>1 ? cat("jjdy_dy_",njets, "j_excl") : string() ),
-          h_jjdy_dy_nRj_excl( njets>1 ? cat("jjdy_dy_",njetsR,"j_excl") : string() );
+  h_jj(jjfb_dy);
+  hist_wt h_jjfb_dy_nj_excl ( njets>1 ? cat("jjfb_dy_",njets, "j_excl") : string() ),
+          h_jjfb_dy_nRj_excl( njets>1 ? cat("jjfb_dy_",njetsR,"j_excl") : string() );
 
-  h_jj(jjpT_dphi); h_jj(jjdy_dphi);
-  h_jj(H_jjpT_dphi_VBF); h_jj(H_jjdy_dphi_VBF);
+  h_jj(jjpT_dphi); h_jj(jjfb_dphi);
+  h_jj(H_jjpT_dphi_VBF); h_jj(H_jjfb_dphi_VBF);
 
-  h_jj(jjpT_mass);   h_jj(jjdy_mass);
-  h_jj(HjjpT_mass);  h_jj(Hjjdy_mass);
+  h_jj(jjpT_mass);   h_jj(jjfb_mass);
+  h_jj(HjjpT_mass);  h_jj(Hjjfb_mass);
   h_jj(H_jjpT_dy);   h_jj(H_jjpT_dy_avgyjj);
-  h_jj(H_jjdy_dy);   h_jj(H_jjdy_dy_avgyjj);
-  h_jj(H_jjpT_dphi); h_jj(H_jjdy_dphi); h_jj(H_jj_phi2);
+  h_jj(H_jjfb_dy);   h_jj(H_jjfb_dy_avgyjj);
+  h_jj(H_jjpT_dphi); h_jj(H_jjfb_dphi); h_jj(H_jj_phi2);
 
-  // h_jj(jjpT_N_jhj_incl); h_jj(jjdy_N_jhj_incl);
-  h_jj(jjpT_N_jhj_excl); h_jj(jjdy_N_jhj_excl);
+  // h_jj(jjpT_N_jhj_incl); h_jj(jjfb_N_jhj_incl);
+  h_jj(jjpT_N_jhj_excl); h_jj(jjfb_N_jhj_excl);
 
   const size_t ndy = 6;
 
@@ -350,17 +350,17 @@ int main(int argc, char** argv)
       h_jet_pT_jjpT[j].emplace_back(cat("jet",j+1,"_pT_jjpT_mindy",i+1));
   }
 
-  vector<vector<hist_wt>> h_jet_pT_jjdy(njetsR);
+  vector<vector<hist_wt>> h_jet_pT_jjfb(njetsR);
   if (njets>1) for (size_t j=0; j<njetsR; ++j) {
-    h_jet_pT_jjdy[j].reserve(ndy);
+    h_jet_pT_jjfb[j].reserve(ndy);
     for (size_t i=0; i<ndy; ++i)
-      h_jet_pT_jjdy[j].emplace_back(cat("jet",j+1,"_pT_jjdy_mindy",i+1));
+      h_jet_pT_jjfb[j].emplace_back(cat("jet",j+1,"_pT_jjfb_mindy",i+1));
   }
 
-  h_jj(jjpT_loose_VBF); h_jj(jjdy_loose_VBF);
-  h_jj(jjpT_tight_VBF); h_jj(jjdy_tight_VBF);
+  h_jj(jjpT_loose_VBF); h_jj(jjfb_loose_VBF);
+  h_jj(jjpT_tight_VBF); h_jj(jjfb_tight_VBF);
 
-  h_opt(central_j_veto_dy, njets>2);
+  h_opt(jjfb_j_dy_veto, njets>2);
 
   // Reading entries from the input TChain **************************
   Long64_t num_selected = 0, num_events = 0;
@@ -371,8 +371,8 @@ int main(int argc, char** argv)
   timed_counter counter(counter_newline);
 
   // variables
-  Double_t jjpT_dy   = 0, jjdy_dy   = 0;
-  Double_t jjpT_dphi = 0, jjdy_dphi = 0;
+  Double_t jjpT_dy   = 0, jjfb_dy   = 0;
+  Double_t jjpT_dphi = 0, jjfb_dphi = 0;
   Double_t y_center  = 0;
 
   // LOOP
@@ -546,13 +546,13 @@ int main(int argc, char** argv)
       jjpT_dy = abs(jets[0].y - jets[1].y);
       jjpT_dphi = fmod( abs(jets[0].phi - jets[1].phi), M_PI);
 
-      // jjdy
+      // jjfb
       for (size_t j=1; j<nj; ++j) {
         if (jets[j].y < jets[jymin].y) jymin = j;
         if (jets[j].y > jets[jymax].y) jymax = j;
       }
-      jjdy_dy   = jets[jymax].y - jets[jymin].y;
-      jjdy_dphi = fmod( abs(jets[jymin].phi - jets[jymax].phi), M_PI);
+      jjfb_dy   = jets[jymax].y - jets[jymin].y;
+      jjfb_dphi = fmod( abs(jets[jymin].phi - jets[jymax].phi), M_PI);
       y_center  = (jets[jymax].y + jets[jymin].y)/2;
     }
 
@@ -578,25 +578,25 @@ int main(int argc, char** argv)
 
         // dy by dy
         for (size_t i=0; i<ndy; ++i)
-          if ( jjdy_dy > (i+1) )
-            h_jet_pT_jjdy[j][i].Fill(jets[j].pT);
+          if ( jjfb_dy > (i+1) )
+            h_jet_pT_jjfb[j][i].Fill(jets[j].pT);
       }
     }
 
     if (njets>1) {
 
       h_jjpT_dy.Fill(jjpT_dy);
-      h_jjdy_dy.Fill(jjdy_dy);
+      h_jjfb_dy.Fill(jjfb_dy);
 
       h_jjpT_dphi.Fill(jjpT_dphi);
-      h_jjdy_dphi.Fill(jjdy_dphi);
+      h_jjfb_dphi.Fill(jjfb_dphi);
 
       if (nj==njets) {
         h_jjpT_dy_nj_excl.Fill(jjpT_dy);
-        h_jjdy_dy_nj_excl.Fill(jjdy_dy);
+        h_jjfb_dy_nj_excl.Fill(jjfb_dy);
       } else if (nj==njetsR) {
         h_jjpT_dy_nRj_excl.Fill(jjpT_dy);
-        h_jjdy_dy_nRj_excl.Fill(jjdy_dy);
+        h_jjfb_dy_nRj_excl.Fill(jjfb_dy);
       }
 
       TLorentzVector jj = jets[0].p + jets[1].p;
@@ -619,21 +619,21 @@ int main(int argc, char** argv)
       jj_mass   = jj.M();
       H_jj_dphi = fmod( abs(H_phi - jj.Phi()), M_PI);
 
-      h_jjdy_mass  .Fill( jj_mass );
-      h_Hjjdy_mass .Fill( (*higgs + jj).M() );
-      h_H_jjdy_dy  .Fill( abs(H_y - jj.Rapidity()) );
-      h_H_jjdy_dphi.Fill( H_jj_dphi );
+      h_jjfb_mass  .Fill( jj_mass );
+      h_Hjjfb_mass .Fill( (*higgs + jj).M() );
+      h_H_jjfb_dy  .Fill( abs(H_y - jj.Rapidity()) );
+      h_H_jjfb_dphi.Fill( H_jj_dphi );
       
-      h_H_jjdy_dy_avgyjj.Fill( abs(H_y - y_center) );
+      h_H_jjfb_dy_avgyjj.Fill( abs(H_y - y_center) );
 
-      if (jjdy_dy>2.8 && jj_mass>400) {
-        h_H_jjdy_dphi_VBF.Fill( H_jj_dphi );
-        h_jjdy_loose_VBF .Fill( 0.5 );
-        if (H_jj_dphi>2.6) h_jjdy_tight_VBF.Fill( 0.5 );
+      if (jjfb_dy>2.8 && jj_mass>400) {
+        h_H_jjfb_dphi_VBF.Fill( H_jj_dphi );
+        h_jjfb_loose_VBF .Fill( 0.5 );
+        if (H_jj_dphi>2.6) h_jjfb_tight_VBF.Fill( 0.5 );
       }
 
       h_jjpT_N_jhj_excl.Fill( between(jets[0    ].y,H_y,jets[1    ].y) ? nj : 0 );
-      h_jjdy_N_jhj_excl.Fill( between(jets[jymin].y,H_y,jets[jymin].y) ? nj : 0 );
+      h_jjfb_N_jhj_excl.Fill( between(jets[jymin].y,H_y,jets[jymin].y) ? nj : 0 );
 
 
 		  // Calculation of phi_2 from arXiv:1001.3822  
@@ -684,7 +684,7 @@ int main(int argc, char** argv)
         // ydists is now the smallest distance between the centre of the
         // tagging jets and any possible further jet
         // (100 in case of no further jets)
-        h_central_j_veto_dy.FillIncl(y_dists);
+        h_jjfb_j_dy_veto.FillIncl(y_dists);
 		  }
 		  
 		  // Diphoton variables and histograms
