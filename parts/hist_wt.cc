@@ -31,22 +31,24 @@ hist_wt::hist_wt(const string& name) {
 }
 
 void hist_wt::Fill(Double_t x) noexcept {
+  // all histograms in a set have the same binning
+  const Int_t bin = get<0>(h.cbegin()->second)->FindFixBin(x);
+
   for (auto& _h : h) {
     auto *hist = get<0>(_h.second);
     const Double_t w = _h.first->get();
-    const Int_t  bin = hist->FindFixBin(x);
-    
+
     if (keep_sumw2)
       get<1>(_h.second).emplace(bin,0.).first->second += w;
+
     hist->Fill(x,w);
   }
 }
 
 void hist_wt::FillIncl(Double_t x) noexcept {
   const TH1* hist = get<0>(h.cbegin()->second);
-  const Int_t n = hist->GetNbinsX();
   
-  for (Int_t i=hist->FindFixBin(x); i<=n; ++i)
+  for (Int_t i=1, n=hist->FindFixBin(x); i<=n; ++i)
     Fill(hist->GetBinCenter(i));
 }
 
