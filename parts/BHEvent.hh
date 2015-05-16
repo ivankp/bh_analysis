@@ -1,7 +1,7 @@
 #ifndef BHEvent_h
 #define BHEvent_h
 
-#define BHMAXNP 100 // maximum number of partons
+#define BHMAXNP 10 // maximum number of partons
 
 #include <Rtypes.h>
 
