@@ -194,7 +194,7 @@ int main(int argc, char** argv)
     }
 
     // Cross section
-    const Double_t sigma   = ( h_name.find("_N_incl") != string::npos
+    const Double_t sigma   = ( h_var == var::N && h_name.find("incl") != string::npos
                            ? h_cent->GetAt(1)
                            : h_cent->Integral(0,nbins+1) )/N_events;
     const Double_t sigma_u = h_cent->GetAt(0)/N_events;

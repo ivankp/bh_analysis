@@ -65,8 +65,6 @@ inline Double_t fphi2(const TLorentzVector& b, const TLorentzVector& f) noexcept
   else return phi2;
 }
 
-senum(jjtype,(pT)(fb))
-
 // ******************************************************************
 struct Jet {
 private:
@@ -87,6 +85,8 @@ public:
 };
 // ******************************************************************
 
+senum(VBF,(none)(hardest)(any))
+
 int main(int argc, char** argv)
 {
   // START OPTIONS **************************************************
@@ -96,8 +96,9 @@ int main(int argc, char** argv)
   double jet_pt_cut, jet_eta_cut;
   real_range<Double_t> AA_mass_cut;
   int_range<Long64_t> ents;
-  bool AAntuple, VBF, counter_newline, quiet;
-  jjtype::type jj_type = jjtype::pT;
+  VBF::type VBFcut;
+  bool AAntuple, counter_newline, quiet, strict;
+  Long64_t cache_size;
 
   bool sj_given = false, wt_given = false;
   bool apply_AA_mass_cut = false;
@@ -132,12 +133,10 @@ int main(int argc, char** argv)
        "jet pT cut in GeV")
       ("jet-eta-cut", po::value<double>(&jet_eta_cut)->default_value(4.4,"4.4"),
        "jet eta cut")
-
-      ("jj", po::value<jjtype::type>(&jj_type),
-       "tagging jets type: pT or fb")
-
-      ("VBF", po::bool_switch(&VBF),
-       "apply Vector Bososn Fusion cuts\njj_dy>2.8 && jj_mass>400")
+       
+      ("VBF", po::value<VBF::type>(&VBFcut)->default_value(VBF::none),
+       "apply Vector Bososn Fusion cuts\n(jj_dy>2.8 && jj_mass>400)\n"
+       "to hardest or any jets")
 
       ("AA", po::bool_switch(&AAntuple),
        "make Higgs from diphoton\nand produce AA histograms")
@@ -147,12 +146,17 @@ int main(int argc, char** argv)
       ("style,s", po::value<string>(&css_file)
        ->default_value(CONFDIR"/Hjets.css","Hjets.css"),
        "CSS style file for histogram binning and formating")
+      ("cache", po::value<Long64_t>(&cache_size)->default_value(50),
+       "cache size in Mb")
+
       ("num-ent,n", po::value<int_range<Long64_t>>(&ents),
        "process only this many entries,\nnum or first:num")
       ("counter-newline", po::bool_switch(&counter_newline),
        "do not overwrite previous counter message")
       ("quiet,q", po::bool_switch(&quiet),
        "Do not print exception messages")
+      ("strict,z", po::bool_switch(&strict),
+       "Exit on no particle of interest")
     ;
 
     po::variables_map vm;
@@ -165,12 +169,6 @@ int main(int argc, char** argv)
     if (vm.count("sj")) sj_given = true;
     if (vm.count("wt")) wt_given = true;
     if (vm.count("AA_mass_cut")) apply_AA_mass_cut = true;
-    if (njets>2 && !vm.count("jj")) {
-      throw runtime_error(
-        "Type of two tagging jets has to be specified for njets > 2\n"
-        "Pass either --jj=pT or --jj=fb flag");
-    }
-    if (njets<2) VBF = false;
   }
   catch(exception& e) {
     cerr << "\033[31mError: " <<  e.what() <<"\033[0m"<< endl;
@@ -179,15 +177,15 @@ int main(int argc, char** argv)
   // END OPTIONS ****************************************************
 
   // Setup input files **********************************************
-  TChain*    tree = new TChain("t3");
-  TChain* sj_tree = (sj_given ? new TChain("SpartyJet_Tree") : nullptr);
-  TChain* wt_tree = (wt_given ? new TChain("weights") : nullptr);
+  TChain* const bh_tree = new TChain("t3");
+  TChain* const sj_tree = (sj_given ? new TChain("SpartyJet_Tree") : nullptr);
+  TChain* const wt_tree = (wt_given ? new TChain("weights") : nullptr);
 
   // Add trees from all the files to the TChains
   cout << "BH files:" << endl;
   for (auto& f : bh_files) {
     cout << "  " << f << endl;
-    if (!tree->AddFile(f.c_str(),-1) ) exit(1);
+    if (!bh_tree->AddFile(f.c_str(),-1) ) exit(1);
   }
   if (sj_given) {
     cout << "SJ files:" << endl;
@@ -208,8 +206,8 @@ int main(int argc, char** argv)
   // Find number of entries to process
   if (ents.len > 0) {
     const Long64_t need_ent = ents.end();
-    if (need_ent>tree->GetEntries()) {
-      cerr << "Fewer entries in BH chain (" << tree->GetEntries()
+    if (need_ent>bh_tree->GetEntries()) {
+      cerr << "Fewer entries in BH chain (" << bh_tree->GetEntries()
          << ") then requested (" << need_ent << ')' << endl;
       exit(1);
     }
@@ -224,7 +222,7 @@ int main(int argc, char** argv)
       exit(1);
     }
   } else {
-    ents.len = tree->GetEntries();
+    ents.len = bh_tree->GetEntries();
     if (sj_given) if (ents.len!=sj_tree->GetEntries()) {
       cerr << ents.len << " entries in BH chain, but "
            << sj_tree->GetEntries() << " entries in SJ chain" << endl;
@@ -238,32 +236,32 @@ int main(int argc, char** argv)
   }
 
   // Friend BlackHat tree with SpartyJet and Weight trees
-  if (sj_given) tree->AddFriend(sj_tree,"SJ");
-  if (wt_given) tree->AddFriend(wt_tree,"weights");
+  //if (sj_given) tree->AddFriend(sj_tree,"SJ");
+  //if (wt_given) tree->AddFriend(wt_tree,"weights");
 
   // BlackHat tree branches
   BHEvent event;
-  event.SetTree(tree, BHEvent::kinematics);
+  event.SetTree(bh_tree, BHEvent::kinematics);
 
   // Jet Clustering Algorithm
   unique_ptr<fastjet::JetDefinition> jet_def;
   unique_ptr<SJClusterAlg> sj_alg;
 
   if (sj_given) {
-    sj_alg.reset( new SJClusterAlg(tree,jet_alg) );
+    sj_alg.reset( new SJClusterAlg(sj_tree,jet_alg) );
   } else {
     jet_def.reset( fj_jetdef(jet_alg) );
     cout << "Clustering with " << jet_def->description() << endl;
   }
 
-  // Weights tree branches
+  // Weights tree branches ******************************************
   if (wt_given) {
     cout << endl;
     if (weights.size()) {
       cout << "Selected weights:" << endl;
       for (auto& w : weights) {
         cout << w << endl;
-        weight::add(tree,w);
+        weight::add(wt_tree,w);
       }
     } else {
       cout << "Using all weights:" << endl;
@@ -271,13 +269,60 @@ int main(int argc, char** argv)
       for (Int_t i=0,n=br->GetEntries();i<n;++i) {
         auto w = br->At(i)->GetName();
         cout << w << endl;
-        weight::add(tree,w);
+        weight::add(wt_tree,w);
       }
     }
     cout << endl;
-  } else weight::add(tree,"weight2",false); // Use default ntuple weight2
+  } else { // Use default ntuple weight2
+    bh_tree->SetBranchStatus("weight2", true);
+    weight::add(bh_tree,"weight2",false);
+  }
+  
+  // Use TTreeCache *************************************************
+  if (cache_size > 0) {
+    cache_size *= 1024*1024;
+    if (wt_given && sj_given) cache_size /= 3;
+    else if (wt_given || sj_given) cache_size /= 2;
+  
+    bh_tree->SetCacheSize(cache_size);
+    auto *brs = bh_tree->GetListOfBranches();
+    for ( Int_t i=0, n=brs->GetEntries(); i<n; ++i ) {
+      TBranch *br = static_cast<TBranch*>( brs->At(i) );
+      if (!br->TestBit(kDoNotProcess)) {
+        cout << br->GetName() << " added to cache" << endl;
+        bh_tree->AddBranchToCache(br,kTRUE);
+      }
+      bh_tree->StopCacheLearningPhase();
+    }
 
-  // Read CSS file with histogram properties
+    if (wt_given) {
+      wt_tree->SetCacheSize(cache_size);
+      brs = wt_tree->GetListOfBranches();
+      for ( Int_t i=0, n=brs->GetEntries(); i<n; ++i ) {
+        TBranch *br = static_cast<TBranch*>( brs->At(i) );
+        if (!br->TestBit(kDoNotProcess)) {
+          cout << br->GetName() << " added to cache" << endl;
+          wt_tree->AddBranchToCache(br,kTRUE);
+        }
+      }
+      wt_tree->StopCacheLearningPhase();
+    }
+
+    if (sj_given) {
+      sj_tree->SetCacheSize(cache_size);
+      brs = wt_tree->GetListOfBranches();
+      for ( Int_t i=0, n=brs->GetEntries(); i<n; ++i ) {
+        TBranch *br = static_cast<TBranch*>( brs->At(i) );
+        if (!br->TestBit(kDoNotProcess)) {
+          cout << br->GetName() << " added to cache" << endl;
+          sj_tree->AddBranchToCache(br,kTRUE);
+        }
+      }
+      sj_tree->StopCacheLearningPhase();
+    }
+  }
+
+  // Read CSS file with histogram properties ************************
   cout << "Histogram CSS file: " << css_file << endl;
   shared_ptr<csshists> hist_css( new csshists(css_file) );
   hist_wt::css = hist_css;
@@ -342,33 +387,48 @@ int main(int argc, char** argv)
 
   h_(jets_tau_max); h_(jets_tau_sum);
 
-  h_(jets_N_incl_nojetcuts); h_(jets_N_excl_nojetcuts);
+  h_(jets_N_incl); h_(jets_N_excl);
 
-  h_jj(jj_dy);
-  hist_wt h_jj_dy_nj_excl ( njets>1 ? cat("jj_dy_",njets, "j_excl") : string() ),
-          h_jj_dy_nRj_excl( njets>1 ? cat("jj_dy_",njetsR,"j_excl") : string() );
+  h_jj(jjpT_dy);
+  hist_wt h_jjpT_dy_nj_excl ( njets>1 ? cat("jjpT_dy_",njets, "j_excl") : string() ),
+          h_jjpT_dy_nRj_excl( njets>1 ? cat("jjpT_dy_",njetsR,"j_excl") : string() );
 
-  h_jj(jj_dphi);
-  h_jj(jj_mass);
+  h_jj(jjfb_dy);
+  hist_wt h_jjfb_dy_nj_excl ( njets>1 ? cat("jjfb_dy_",njets, "j_excl") : string() ),
+          h_jjfb_dy_nRj_excl( njets>1 ? cat("jjfb_dy_",njetsR,"j_excl") : string() );
 
-  h_jj(Hjj_mass);
-  h_jj(H_jj_dy); h_jj(H_jj_dy_avgyjj); h_jj(H_jj_dphi);
-  h_opt(H_jj_phi2, njets>1 && jj_type==jjtype::fb);
+  h_jj(jjpT_dphi); h_jj(jjfb_dphi);
 
-  h_jj(jj_N_jHj_excl);
+  h_jj(jjpT_mass);   h_jj(jjfb_mass);
+  h_jj(HjjpT_mass);  h_jj(Hjjfb_mass);
+  h_jj(H_jjpT_dy);   h_jj(H_jjpT_dy_avgyjj);
+  h_jj(H_jjfb_dy);   h_jj(H_jjfb_dy_avgyjj);
+  h_jj(H_jjpT_dphi); h_jj(H_jjfb_dphi); h_jj(H_jj_phi2);
+
+  h_jj(jjpT_N_jhj_incl); h_jj(jjfb_N_jhj_incl);
+  h_jj(jjpT_N_jhj_excl); h_jj(jjfb_N_jhj_excl);
 
   const size_t ndy = 6;
 
-  vector<vector<hist_wt>> h_jet_pT_jj(njetsR);
+  vector<vector<hist_wt>> h_jet_pT_jjpT(njetsR);
   if (njets>1) for (size_t j=0; j<njetsR; ++j) {
-    h_jet_pT_jj[j].reserve(ndy);
+    h_jet_pT_jjpT[j].reserve(ndy);
     for (size_t i=0; i<ndy; ++i)
-      h_jet_pT_jj[j].emplace_back(cat("jet",j+1,"_pT_minjjdy",i+1));
+      h_jet_pT_jjpT[j].emplace_back(cat("jet",j+1,"_pT_jjpT_mindy",i+1));
   }
 
-  h_jj(jj_loose); h_jj(jj_tight);
+  vector<vector<hist_wt>> h_jet_pT_jjfb(njetsR);
+  if (njets>1) for (size_t j=0; j<njetsR; ++j) {
+    h_jet_pT_jjfb[j].reserve(ndy);
+    for (size_t i=0; i<ndy; ++i)
+      h_jet_pT_jjfb[j].emplace_back(cat("jet",j+1,"_pT_jjfb_mindy",i+1));
+  }
 
-  h_opt(jj_j_dy_veto, njets>2);
+  h_jj(jjpT_loose); h_jj(jjfb_loose);
+  h_jj(jjpT_tight); h_jj(jjfb_tight);
+
+  h_opt(jjpT_j_dy_veto, njets>2);
+  h_opt(jjfb_j_dy_veto, njets>2);
 
   // Reading entries from the input TChain **************************
   Long64_t num_selected = 0, num_events = 0;
@@ -377,23 +437,25 @@ int main(int argc, char** argv)
   if (ents.first>0) cout << " starting at " << ents.first;
   cout << endl;
   timed_counter counter(counter_newline);
-
+  
   // Variables ******************************************************
-  size_t j1 = 0, j2 = 0;
+  size_t jb = 0, jf = 0;
 
-  TLorentzVector A1, A2, higgs, jj;
-
+  TLorentzVector A1, A2, higgs, jjpT, jjfb;
+  
   Double_t H_mass, H_pT, H_y, H_phi;
 
-  Double_t jj_dy=0, jj_dphi=0, jj_ycenter=0, jj_mass=0;
-
+  Double_t jjpT_dy=0, jjpT_dphi=0, jjpT_ycenter=0, jjpT_mass=0,
+           jjfb_dy=0, jjfb_dphi=0, jjfb_ycenter=0, jjfb_mass=0;
+  
   // LOOP ***********************************************************
   for (Long64_t ent = ents.first, ent_end = ents.end(); ent < ent_end; ++ent) {
     counter(ent);
-    tree->GetEntry(ent);
+    bh_tree->GetEntry(ent);
 
     if (event.nparticle>BHMAXNP) {
-      cerr << "\033[31mMore particles in the entry then BHMAXNP\033[0m" << endl
+      cerr << "\033[31mMore particles in entry then BHMAXNP = "
+           << BHMAXNP << "\033[0m\n"
            << "Increase array length to " << event.nparticle << endl;
       exit(1);
     }
@@ -413,11 +475,12 @@ int main(int argc, char** argv)
         }
       }
       if (Ai2==-1) {
-        cerr << "\033[31mEvent " << ent
-             << " doesn't have 2 photons\033[0m" << endl;
-        continue;
+        if (!quiet)
+          cerr << "\033[31mEvent " << ent
+               << " doesn't have 2 photons\033[0m" << endl;
+        if (strict) exit(1); else continue;
       }
-
+    
     } else { // Higgs
 
       while (Hi<event.nparticle) {
@@ -425,8 +488,9 @@ int main(int argc, char** argv)
         else ++Hi;
       }
       if (Hi==event.nparticle) {
-        cerr << "\033[31mNo Higgs in event " << ent <<"\033[0m"<< endl;
-        continue;
+        if (!quiet)
+          cerr << "\033[31mNo Higgs in event " << ent <<"\033[0m"<< endl;
+        if (strict) exit(1); else continue;
       }
 
     }
@@ -436,14 +500,14 @@ int main(int argc, char** argv)
       h_N->Fill(0.5);
       prev_id = event.eid;
       ++num_events;
-
+      
       for (auto h : hist_wt::all) h->FillSumw2();
     }
 
     if (AAntuple) {
-      A1 = TLorentzVector(event.px[Ai1], event.py[Ai1],
+      A1 = TLorentzVector(event.px[Ai1], event.py[Ai1], 
                           event.pz[Ai1], event.E [Ai1]);
-      A2 = TLorentzVector(event.px[Ai2], event.py[Ai2],
+      A2 = TLorentzVector(event.px[Ai2], event.py[Ai2], 
                           event.pz[Ai2], event.E [Ai2]);
 
       // Photon cuts
@@ -456,14 +520,14 @@ int main(int argc, char** argv)
       }
       if ( A1.Eta() > 2.37 ) continue;
       if ( A2.Eta() > 2.37 ) continue;
-
+           
       higgs = A1 + A2;
 
     } else {
       higgs = TLorentzVector(event.px[Hi], event.py[Hi],
                              event.pz[Hi], event.E [Hi]);
     }
-
+    
     H_mass = higgs.M(); // Higgs Mass
 
     if (apply_AA_mass_cut)
@@ -477,6 +541,7 @@ int main(int argc, char** argv)
     size_t nj;
 
     if (sj_given) { // Read jets from SpartyJet ntuple
+      sj_tree->GetEntry(ent);
       const vector<TLorentzVector> sj_jets = sj_alg->jetsByPt(jet_pt_cut,jet_eta_cut);
       nj = sj_jets.size();
 
@@ -529,52 +594,62 @@ int main(int argc, char** argv)
     }
     // ****************************************************
 
+    H_pT  = higgs.Pt();  // Higgs Pt
+    H_phi = higgs.Phi(); // Higgs Phi
+
+    if (njets>1) {
+
+      jjpT = jets[0 ].p + jets[1 ].p;
+      jjpT_dy = abs(jets[0].y - jets[1].y);
+      jjpT_mass = jjpT.M();
+    
+      // Apply VBF cuts
+      bool passedVBF = true;
+      if (VBFcut!=VBF::none) {
+        passedVBF = (jjpT_dy>2.8 && jjpT_mass>400);
+
+        if (nj>2 && VBF::any && !passedVBF) {
+          for (size_t i=2; i<nj && !passedVBF; ++i)
+            for (size_t j=0; j<i && !passedVBF; ++j)
+              if ( abs(jets[i].y - jets[j].y)>2.8 &&
+                      (jets[i].p + jets[j].p).M()>400 )
+                passedVBF = true;
+        }
+      }
+      if (!passedVBF) continue;
+    
+      jjpT_dphi = dphi(jets[0].phi, jets[1].phi);
+      jjpT_ycenter = (jets[0].y + jets[1].y)/2;
+
+      // find most forward and backward jets
+      for (size_t j=1; j<nj; ++j) {
+        if (jets[j].y < jets[jb].y) jb = j;
+        if (jets[j].y > jets[jf].y) jf = j;
+      }
+      jjfb_dy   = jets[jf].y - jets[jb].y;
+      jjfb_dphi = dphi(jets[jb].phi, jets[jf].phi);
+      jjfb_ycenter = (jets[jf].y + jets[jb].y)/2;
+    
+      jjfb = jets[jb].p + jets[jf].p;
+      jjfb_mass = jjfb.M();
+      
+    }
+    
+    if (wt_given) wt_tree->GetEntry(ent);
+
     // Number of jets hists
-    h_jets_N_excl_nojetcuts.Fill(nj);
-    for (size_t i=0; i<=nj; ++i)
-      h_jets_N_incl_nojetcuts.Fill(i);
+    h_jets_N_excl.Fill(nj);
+    h_jets_N_incl.FillIncl(nj);
 
     // Do no process entries with fewer then njets
     if (nj < njets) continue;
 
-    if (njets==2) {
-      j1 = 0; j2 = 1;
-    } else if (njets>2) {
-      switch (jj_type) {
-        case jjtype::pT:
-          j1 = 0; j2 = 1;
-          break;
-        case jjtype::fb:
-          for (size_t j=1; j<nj; ++j) {
-            if (jets[j].y < jets[j1].y) j1 = j;
-            if (jets[j].y > jets[j2].y) j2 = j;
-          }
-          break;
-      }
-    }
-
-    if (njets > 1) {
-      jj = jets[j1].p + jets[j2].p;
-      jj_dy = abs(jets[j1].y - jets[j2].y);
-      jj_mass = jj.M();
-
-      if (VBF) // Apply VBF cuts
-        if (jj_dy>2.8 && jj_mass>400) continue;
-
-      jj_dphi = dphi(jets[j1].phi, jets[j2].phi);
-      jj_ycenter = (jets[j1].y + jets[j2].y)/2;
-    }
-
     // Increment selected entries
     ++num_selected;
-
-    // ****************************************************
-
-    H_pT  = higgs.Pt();  // Higgs Pt
-    H_phi = higgs.Phi(); // Higgs Phi
-
+    
     // ****************************************************
     // Fill histograms ************************************
+
     h_H_mass.Fill(H_mass);
     h_H_pT  .Fill(H_pT);
     h_H_y   .Fill(H_y);
@@ -589,53 +664,99 @@ int main(int argc, char** argv)
       h_Hnj_pT  [j].Fill( (Hnj += jets[j].p).Pt() );
 
       if (njets>1) {
+        // dy by pT
         for (size_t i=0; i<ndy; ++i)
-          if ( jj_dy > (i+1) )
-            h_jet_pT_jj[j][i].Fill(jets[j].pT);
+          if ( jjpT_dy > (i+1) )
+            h_jet_pT_jjpT[j][i].Fill(jets[j].pT);
+
+        // dy by dy
+        for (size_t i=0; i<ndy; ++i)
+          if ( jjfb_dy > (i+1) )
+            h_jet_pT_jjfb[j][i].Fill(jets[j].pT);
       }
     }
 
     if (njets>1) {
+    
+      // Leading pT jets are tagging
+      // ----------------------------------------
+      h_jjpT_dy  .Fill(jjpT_dy);
+      h_jjpT_dphi.Fill(jjpT_dphi);
+      
+      if (nj==njets) h_jjpT_dy_nj_excl.Fill(jjpT_dy);
+      else           h_jjpT_dy_nRj_excl.Fill(jjpT_dy);
+      
+      Double_t H_jj_dphi = dphi(jjpT,H_phi);
 
-      h_jj_dy  .Fill(jj_dy);
-      h_jj_dphi.Fill(jj_dphi);
+      h_jjpT_mass  .Fill( jjpT_mass );
+      h_HjjpT_mass .Fill( (higgs + jjpT).M() );
+      h_H_jjpT_dy  .Fill( abs(H_y - jjpT.Rapidity()) );
+      h_H_jjpT_dphi.Fill( H_jj_dphi );
+      h_H_jjpT_dy_avgyjj.Fill( abs(H_y - jjpT_ycenter) );
+      
+      h_jjpT_loose .Fill( 0.5 );
+      if (H_jj_dphi > 2.6) h_jjpT_tight.Fill( 0.5 );
 
-      if (nj==njets) h_jj_dy_nj_excl .Fill(jj_dy);
-      else           h_jj_dy_nRj_excl.Fill(jj_dy);
+      size_t NjHj = ( between(jets[0].y,H_y,jets[1].y) ? nj : 0 );
+      h_jjpT_N_jhj_excl.Fill(NjHj);
+      h_jjpT_N_jhj_incl.FillIncl(NjHj);
+      
+	    if (njets>2) {
+        // Third photon veto:
+        // ydists is the smallest distance between the centre of the
+        // tagging jets and any possible further jet
+        Double_t y_dists = 100.;
+        for (size_t j=2; j<nj; ++j) {
+          Double_t y_distt = abs(jets[j].y - jjpT_ycenter);
+          if (y_distt < y_dists) y_dists = y_distt;
+        }
+        h_jjpT_j_dy_veto.FillIncl(y_dists);
+	    }
+      // ----------------------------------------
 
-      const Double_t H_jj_dphi = dphi(jj,H_phi);
+      // Forward-backward jets are tagging
+      // ----------------------------------------
+      h_jjfb_dy  .Fill(jjfb_dy);
+      h_jjfb_dphi.Fill(jjfb_dphi);
+      
+      if (nj==njets) h_jjfb_dy_nj_excl .Fill(jjfb_dy);
+      else           h_jjfb_dy_nRj_excl.Fill(jjfb_dy);
+      
+      H_jj_dphi = dphi(jjfb,H_phi);
 
-      h_jj_mass  .Fill( jj_mass );
-      h_Hjj_mass .Fill( (higgs + jj).M() );
-      h_H_jj_dy  .Fill( abs(H_y - jj.Rapidity()) );
-      h_H_jj_dphi.Fill( H_jj_dphi );
-      h_H_jj_dy_avgyjj.Fill( abs(H_y - jj_ycenter) );
+      h_jjfb_mass  .Fill( jjfb_mass );
+      h_Hjjfb_mass .Fill( (higgs + jjfb).M() );
+      h_H_jjfb_dy  .Fill( abs(H_y - jjfb.Rapidity()) );
+      h_H_jjfb_dphi.Fill( H_jj_dphi );
+      h_H_jjfb_dy_avgyjj.Fill( abs(H_y - jjfb_ycenter) );
+      
+      h_jjfb_loose .Fill( 0.5 );
+      if (H_jj_dphi > 2.6) h_jjfb_tight.Fill( 0.5 );
 
-      h_jj_loose .Fill( 0.5 );
-      if (H_jj_dphi > 2.6) h_jj_tight.Fill( 0.5 );
-
-      h_jj_N_jHj_excl.Fill( between(jets[j1].y,H_y,jets[j2].y) ? nj : 0 );
-
+      NjHj = ( between(jets[jb].y,H_y,jets[jb].y) ? nj : 0 );
+      h_jjfb_N_jhj_excl.Fill(NjHj);
+      h_jjfb_N_jhj_incl.FillIncl(NjHj);
+      
 	    if (njets>2) {
         // Third photon veto:
         // ydists is the smallest distance between the centre of the
         // tagging jets and any possible further jet
         Double_t y_dists = 100.;
         for (size_t j=0; j<nj; ++j) {
-          if (j==j1 || j==j2) continue;
-          Double_t y_distt = fabs(jets[j].y - jj_ycenter);
+          if (j==jb || j==jf) continue;
+          Double_t y_distt = abs(jets[j].y - jjfb_ycenter);
           if (y_distt < y_dists) y_dists = y_distt;
         }
-        h_jj_j_dy_veto.FillIncl(y_dists);
+        h_jjfb_j_dy_veto.FillIncl(y_dists);
 	    }
-
-	    // Calculation of phi_2 from arXiv:1001.3822
-	    // phi_2 = azimuthal angle between the vector sum of jets
+      
+	    // Calculation of phi_2 from arXiv:1001.3822  
+	    // phi_2 = azimuthal angle between the vector sum of jets 
 	    // forward and jets backward of the Higgs boson
 
 	    TLorentzVector vsumf(0.,0.,0.,0.);
 	    TLorentzVector vsumb(0.,0.,0.,0.);
-
+	
 	    Double_t f_nonzero = false, b_nonzero = false;
 	    for (const auto& j : jets) {
 	      if (j.y > H_y) { vsumf += j.p; f_nonzero = true; }
@@ -643,23 +764,22 @@ int main(int argc, char** argv)
 	    }
 
 	    // Calculate phi_2
-      if (jj_type == jjtype::fb) {
-        // j1 is backward, j2 is forward
-  	    Double_t phi2;
-  	    if (f_nonzero && b_nonzero) {
-  	      phi2 = fphi2(vsumb,vsumf);
-  	    } else if (!f_nonzero) {
-  	      vsumb -= jets[j2].p;
-  	      phi2 = fphi2(vsumb,jets[j2].p);
-  	    } else {
-  	      vsumf -= jets[j1].p;
-  	      phi2 = fphi2(jets[j1].p,vsumf);
-  	    }
-
-  	    h_H_jj_phi2.Fill(phi2);
-      }
+	    Double_t phi2;
+	    if (f_nonzero && b_nonzero) {
+	      phi2 = fphi2(vsumb,vsumf);
+	    } else if (!f_nonzero) {
+	      vsumb -= jets[jf].p;
+	      phi2 = fphi2(vsumb,jets[jf].p);
+	    } else { 
+	      vsumf -= jets[jb].p;
+	      phi2 = fphi2(jets[jb].p,vsumf);
+	    }
+	
+	    h_H_jj_phi2.Fill(phi2);
+      // ----------------------------------------
 
 		  // Diphoton histograms
+      // ----------------------------------------
 		  if (AAntuple) {
 
 	      // |costheta*| from 1307.1432
@@ -669,15 +789,17 @@ int main(int argc, char** argv)
         );
 
         h_AA_pTt.Fill(
-          fabs(A1.Px()*A2.Py()-A2.Px()*A1.Py()) / ((A1-A2).Pt()*2)
+          abs(A1.Px()*A2.Py()-A2.Px()*A1.Py()) / ((A1-A2).Pt()*2)
         );
 
-        h_AA_dy.Fill( fabs(A1.Rapidity() - A2.Rapidity()) );
-
+        h_AA_dy.Fill( abs(A1.Rapidity() - A2.Rapidity()) );
+        
 		  } // END AA
+      // ----------------------------------------
 
     } // END if (njets>1)
 
+    // Jets tau
     Double_t jets_HT = 0, jets_tau_max = 0, jets_tau_sum = 0;
     for (const auto& jet : jets) {
       jets_HT += jet.pT;
@@ -690,7 +812,7 @@ int main(int argc, char** argv)
     h_jets_tau_sum.Fill(jets_tau_sum);
 
   } // END of event loop ********************************************
-
+  
   // finish correcting Sumw2
   for (auto h : hist_wt::all) {
     h->FillSumw2();
@@ -706,7 +828,7 @@ int main(int argc, char** argv)
   fout->Write();
   fout->Close();
   delete fout;
-  delete tree;
+  delete bh_tree;
   delete sj_tree;
   delete wt_tree;
 

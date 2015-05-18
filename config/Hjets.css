@@ -80,11 +80,11 @@ jets_tau_sum {
   Bins: 5 -0.5 4.5;
 }
 
-jj_mass {
+jj[^_]*_mass {
   Bins: 35 0 700;
 }
 
-Hjj_mass {
+Hjj[^_]*_mass {
   Bins: 30 150 2000;
 }
 

@@ -314,7 +314,8 @@ int main(int argc, char** argv)
   counter.prt(num_ent.second);
   cout << endl;
 
-  fout->Write();
+  tree->Write("",TObject::kOverwrite);
+  //fout->Write();
   cout << "\n\033[32mWrote\033[0m: " << fout->GetName() << endl;
   fout->Close();
   delete fout;
