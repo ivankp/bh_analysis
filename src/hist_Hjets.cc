@@ -32,6 +32,7 @@
 #include "real_range.hh"
 #include "timed_counter.hh"
 #include "catstr.hh"
+#include "senum.hh"
 
 #define test(var) \
   cout <<"\033[36m"<< #var <<"\033[0m"<< " = " << var << endl;
@@ -64,6 +65,8 @@ inline Double_t fphi2(const TLorentzVector& b, const TLorentzVector& f) noexcept
   else return phi2;
 }
 
+senum(jjtype,(pT)(fb))
+
 // ******************************************************************
 struct Jet {
 private:
@@ -94,6 +97,7 @@ int main(int argc, char** argv)
   real_range<Double_t> AA_mass_cut;
   int_range<Long64_t> ents;
   bool AAntuple, VBF, counter_newline, quiet;
+  jjtype::type jj_type = jjtype::pT;
 
   bool sj_given = false, wt_given = false;
   bool apply_AA_mass_cut = false;
@@ -128,9 +132,12 @@ int main(int argc, char** argv)
        "jet pT cut in GeV")
       ("jet-eta-cut", po::value<double>(&jet_eta_cut)->default_value(4.4,"4.4"),
        "jet eta cut")
-       
+
+      ("jj", po::value<jjtype::type>(&jj_type),
+       "tagging jets type: pT or fb")
+
       ("VBF", po::bool_switch(&VBF),
-       "apply Vector Bososn Fusion cuts\n(jj_dy>2.8 && jj_mass>400)")
+       "apply Vector Bososn Fusion cuts\njj_dy>2.8 && jj_mass>400")
 
       ("AA", po::bool_switch(&AAntuple),
        "make Higgs from diphoton\nand produce AA histograms")
@@ -158,6 +165,12 @@ int main(int argc, char** argv)
     if (vm.count("sj")) sj_given = true;
     if (vm.count("wt")) wt_given = true;
     if (vm.count("AA_mass_cut")) apply_AA_mass_cut = true;
+    if (njets>2 && !vm.count("jj")) {
+      throw runtime_error(
+        "Type of two tagging jets has to be specified for njets > 2\n"
+        "Pass either --jj=pT or --jj=fb flag");
+    }
+    if (njets<2) VBF = false;
   }
   catch(exception& e) {
     cerr << "\033[31mError: " <<  e.what() <<"\033[0m"<< endl;
@@ -329,49 +342,33 @@ int main(int argc, char** argv)
 
   h_(jets_tau_max); h_(jets_tau_sum);
 
-  h_(jets_N_incl); h_(jets_N_excl);
+  h_(jets_N_incl_nojetcuts); h_(jets_N_excl_nojetcuts);
 
-  h_jj(jjpT_dy);
-  hist_wt h_jjpT_dy_nj_excl ( njets>1 ? cat("jjpT_dy_",njets, "j_excl") : string() ),
-          h_jjpT_dy_nRj_excl( njets>1 ? cat("jjpT_dy_",njetsR,"j_excl") : string() );
+  h_jj(jj_dy);
+  hist_wt h_jj_dy_nj_excl ( njets>1 ? cat("jj_dy_",njets, "j_excl") : string() ),
+          h_jj_dy_nRj_excl( njets>1 ? cat("jj_dy_",njetsR,"j_excl") : string() );
 
-  h_jj(jjfb_dy);
-  hist_wt h_jjfb_dy_nj_excl ( njets>1 ? cat("jjfb_dy_",njets, "j_excl") : string() ),
-          h_jjfb_dy_nRj_excl( njets>1 ? cat("jjfb_dy_",njetsR,"j_excl") : string() );
+  h_jj(jj_dphi);
+  h_jj(jj_mass);
 
-  h_jj(jjpT_dphi); h_jj(jjfb_dphi);
-  h_jj(H_jjpT_dphi_VBF); h_jj(H_jjfb_dphi_VBF);
+  h_jj(Hjj_mass);
+  h_jj(H_jj_dy); h_jj(H_jj_dy_avgyjj); h_jj(H_jj_dphi);
+  h_opt(H_jj_phi2, njets>1 && jj_type==jjtype::fb);
 
-  h_jj(jjpT_mass);   h_jj(jjfb_mass);
-  h_jj(HjjpT_mass);  h_jj(Hjjfb_mass);
-  h_jj(H_jjpT_dy);   h_jj(H_jjpT_dy_avgyjj);
-  h_jj(H_jjfb_dy);   h_jj(H_jjfb_dy_avgyjj);
-  h_jj(H_jjpT_dphi); h_jj(H_jjfb_dphi); h_jj(H_jj_phi2);
-
-  // h_jj(jjpT_N_jhj_incl); h_jj(jjfb_N_jhj_incl);
-  h_jj(jjpT_N_jhj_excl); h_jj(jjfb_N_jhj_excl);
+  h_jj(jj_N_jHj_excl);
 
   const size_t ndy = 6;
 
-  vector<vector<hist_wt>> h_jet_pT_jjpT(njetsR);
+  vector<vector<hist_wt>> h_jet_pT_jj(njetsR);
   if (njets>1) for (size_t j=0; j<njetsR; ++j) {
-    h_jet_pT_jjpT[j].reserve(ndy);
+    h_jet_pT_jj[j].reserve(ndy);
     for (size_t i=0; i<ndy; ++i)
-      h_jet_pT_jjpT[j].emplace_back(cat("jet",j+1,"_pT_jjpT_mindy",i+1));
+      h_jet_pT_jj[j].emplace_back(cat("jet",j+1,"_pT_minjjdy",i+1));
   }
 
-  vector<vector<hist_wt>> h_jet_pT_jjfb(njetsR);
-  if (njets>1) for (size_t j=0; j<njetsR; ++j) {
-    h_jet_pT_jjfb[j].reserve(ndy);
-    for (size_t i=0; i<ndy; ++i)
-      h_jet_pT_jjfb[j].emplace_back(cat("jet",j+1,"_pT_jjfb_mindy",i+1));
-  }
+  h_jj(jj_loose); h_jj(jj_tight);
 
-  h_jj(jjpT_loose_VBF); h_jj(jjfb_loose_VBF);
-  h_jj(jjpT_tight_VBF); h_jj(jjfb_tight_VBF);
-
-  h_opt(jjpT_j_dy_veto, njets>2);
-  h_opt(jjfb_j_dy_veto, njets>2);
+  h_opt(jj_j_dy_veto, njets>2);
 
   // Reading entries from the input TChain **************************
   Long64_t num_selected = 0, num_events = 0;
@@ -380,16 +377,15 @@ int main(int argc, char** argv)
   if (ents.first>0) cout << " starting at " << ents.first;
   cout << endl;
   timed_counter counter(counter_newline);
-  
+
   // Variables ******************************************************
-  size_t jb = 0, jf = 0;
+  size_t j1 = 0, j2 = 0;
 
-  TLorentzVector A1, A2, higgs, jjpT, jjfb;
+  TLorentzVector A1, A2, higgs, jj;
 
-  Double_t jjpT_dy, jjpT_dphi, jjpT_ycenter, jjpT_mass,
-           jjfb_dy, jjfb_dphi, jjfb_ycenter, jjfb_mass;
-  
-  bool jjpT_VBF, jjfb_VBF;
+  Double_t H_mass, H_pT, H_y, H_phi;
+
+  Double_t jj_dy=0, jj_dphi=0, jj_ycenter=0, jj_mass=0;
 
   // LOOP ***********************************************************
   for (Long64_t ent = ents.first, ent_end = ents.end(); ent < ent_end; ++ent) {
@@ -421,7 +417,7 @@ int main(int argc, char** argv)
              << " doesn't have 2 photons\033[0m" << endl;
         continue;
       }
-    
+
     } else { // Higgs
 
       while (Hi<event.nparticle) {
@@ -440,14 +436,14 @@ int main(int argc, char** argv)
       h_N->Fill(0.5);
       prev_id = event.eid;
       ++num_events;
-      
+
       for (auto h : hist_wt::all) h->FillSumw2();
     }
 
     if (AAntuple) {
-      A1 = TLorentzVector(event.px[Ai1], event.py[Ai1], 
+      A1 = TLorentzVector(event.px[Ai1], event.py[Ai1],
                           event.pz[Ai1], event.E [Ai1]);
-      A2 = TLorentzVector(event.px[Ai2], event.py[Ai2], 
+      A2 = TLorentzVector(event.px[Ai2], event.py[Ai2],
                           event.pz[Ai2], event.E [Ai2]);
 
       // Photon cuts
@@ -460,20 +456,20 @@ int main(int argc, char** argv)
       }
       if ( A1.Eta() > 2.37 ) continue;
       if ( A2.Eta() > 2.37 ) continue;
-           
+
       higgs = A1 + A2;
 
     } else {
       higgs = TLorentzVector(event.px[Hi], event.py[Hi],
                              event.pz[Hi], event.E [Hi]);
     }
-    
-    const Double_t H_mass = higgs.M(); // Higgs Mass
+
+    H_mass = higgs.M(); // Higgs Mass
 
     if (apply_AA_mass_cut)
       if ( H_mass < AA_mass_cut.min || AA_mass_cut.max < H_mass ) continue;
 
-    const Double_t H_y = higgs.Rapidity(); // Higgs Rapidity
+    H_y = higgs.Rapidity(); // Higgs Rapidity
 
     // Jet clustering *************************************
     vector<Jet> jets;
@@ -534,56 +530,54 @@ int main(int argc, char** argv)
     // ****************************************************
 
     // Number of jets hists
-    h_jets_N_excl.Fill(nj);
+    h_jets_N_excl_nojetcuts.Fill(nj);
     for (size_t i=0; i<=nj; ++i)
-      h_jets_N_incl.Fill(i);
+      h_jets_N_incl_nojetcuts.Fill(i);
 
     // Do no process entries with fewer then njets
     if (nj < njets) continue;
 
+    if (njets==2) {
+      j1 = 0; j2 = 1;
+    } else if (njets>2) {
+      switch (jj_type) {
+        case jjtype::pT:
+          j1 = 0; j2 = 1;
+          break;
+        case jjtype::fb:
+          for (size_t j=1; j<nj; ++j) {
+            if (jets[j].y < jets[j1].y) j1 = j;
+            if (jets[j].y > jets[j2].y) j2 = j;
+          }
+          break;
+      }
+    }
+
+    if (njets > 1) {
+      jj = jets[j1].p + jets[j2].p;
+      jj_dy = abs(jets[j1].y - jets[j2].y);
+      jj_mass = jj.M();
+
+      if (VBF) // Apply VBF cuts
+        if (jj_dy>2.8 && jj_mass>400) continue;
+
+      jj_dphi = dphi(jets[j1].phi, jets[j2].phi);
+      jj_ycenter = (jets[j1].y + jets[j2].y)/2;
+    }
+
     // Increment selected entries
     ++num_selected;
-    
+
     // ****************************************************
 
-    const Double_t H_pT  = higgs.Pt();  // Higgs Pt
-    const Double_t H_phi = higgs.Phi(); // Higgs Phi
-    
-    if (njets>1) {
-      // jjpT Δy and Δφ
-      jjpT_dy = abs(jets[0].y - jets[1].y);
-      jjpT_dphi = fmod( abs(jets[0].phi - jets[1].phi), M_PI);
-      jjpT_ycenter = (jets[0].y + jets[1].y)/2;
-
-      // jjfb Δy and Δφ
-      for (size_t j=1; j<nj; ++j) {
-        if (jets[j].y < jets[jb].y) jb = j;
-        if (jets[j].y > jets[jf].y) jf = j;
-      }
-      jjfb_dy   = jets[jf].y - jets[jb].y;
-      jjfb_dphi = fmod( abs(jets[jb].phi - jets[jf].phi), M_PI);
-      jjfb_ycenter = (jets[jf].y + jets[jb].y)/2;
-    
-      jjpT = jets[0 ].p + jets[1 ].p;
-      jjfb = jets[jb].p + jets[jf].p;
-      
-      jjpT_mass = jjpT.M();
-      jjfb_mass = jjfb.M();
-      
-      jjpT_VBF = (!VBF) || (jjpT_dy>2.8 && jjpT_mass>400);
-      jjfb_VBF = (!VBF) || (jjfb_dy>2.8 && jjfb_mass>400);
-      
-    } else {
-      jjpT_VBF = true;
-      jjfb_VBF = true;
-    }
+    H_pT  = higgs.Pt();  // Higgs Pt
+    H_phi = higgs.Phi(); // Higgs Phi
 
     // ****************************************************
     // Fill histograms ************************************
-    if ()
-      h_H_mass.Fill(H_mass);
-      h_H_pT  .Fill(H_pT);
-      h_H_y   .Fill(H_y);
+    h_H_mass.Fill(H_mass);
+    h_H_pT  .Fill(H_pT);
+    h_H_y   .Fill(H_y);
 
     TLorentzVector Hnj = higgs;
     for (size_t j=0, _nj=min(nj,njetsR); j<_nj; ++j) {
@@ -595,147 +589,75 @@ int main(int argc, char** argv)
       h_Hnj_pT  [j].Fill( (Hnj += jets[j].p).Pt() );
 
       if (njets>1) {
-        // dy by pT
         for (size_t i=0; i<ndy; ++i)
-          if ( jjpT_dy > (i+1) )
-            h_jet_pT_jjpT[j][i].Fill(jets[j].pT);
-
-        // dy by dy
-        for (size_t i=0; i<ndy; ++i)
-          if ( jjfb_dy > (i+1) )
-            h_jet_pT_jjfb[j][i].Fill(jets[j].pT);
+          if ( jj_dy > (i+1) )
+            h_jet_pT_jj[j][i].Fill(jets[j].pT);
       }
     }
 
     if (njets>1) {
-    
-      // ***** Variables *****
-      size_t jb = 0, jf = 0;
 
-      // jjpT Δy and Δφ
-      jjpT_dy = abs(jets[0].y - jets[1].y);
-      jjpT_dphi = fmod( abs(jets[0].phi - jets[1].phi), M_PI);
-      jjpT_ycenter = (jets[0].y + jets[1].y)/2;
+      h_jj_dy  .Fill(jj_dy);
+      h_jj_dphi.Fill(jj_dphi);
 
-      // jjfb Δy and Δφ
-      for (size_t j=1; j<nj; ++j) {
-        if (jets[j].y < jets[jb].y) jb = j;
-        if (jets[j].y > jets[jf].y) jf = j;
+      if (nj==njets) h_jj_dy_nj_excl .Fill(jj_dy);
+      else           h_jj_dy_nRj_excl.Fill(jj_dy);
+
+      const Double_t H_jj_dphi = dphi(jj,H_phi);
+
+      h_jj_mass  .Fill( jj_mass );
+      h_Hjj_mass .Fill( (higgs + jj).M() );
+      h_H_jj_dy  .Fill( abs(H_y - jj.Rapidity()) );
+      h_H_jj_dphi.Fill( H_jj_dphi );
+      h_H_jj_dy_avgyjj.Fill( abs(H_y - jj_ycenter) );
+
+      h_jj_loose .Fill( 0.5 );
+      if (H_jj_dphi > 2.6) h_jj_tight.Fill( 0.5 );
+
+      h_jj_N_jHj_excl.Fill( between(jets[j1].y,H_y,jets[j2].y) ? nj : 0 );
+
+	    if (njets>2) {
+        // Third photon veto:
+        // ydists is the smallest distance between the centre of the
+        // tagging jets and any possible further jet
+        Double_t y_dists = 100.;
+        for (size_t j=0; j<nj; ++j) {
+          if (j==j1 || j==j2) continue;
+          Double_t y_distt = fabs(jets[j].y - jj_ycenter);
+          if (y_distt < y_dists) y_dists = y_distt;
+        }
+        h_jj_j_dy_veto.FillIncl(y_dists);
+	    }
+
+	    // Calculation of phi_2 from arXiv:1001.3822
+	    // phi_2 = azimuthal angle between the vector sum of jets
+	    // forward and jets backward of the Higgs boson
+
+	    TLorentzVector vsumf(0.,0.,0.,0.);
+	    TLorentzVector vsumb(0.,0.,0.,0.);
+
+	    Double_t f_nonzero = false, b_nonzero = false;
+	    for (const auto& j : jets) {
+	      if (j.y > H_y) { vsumf += j.p; f_nonzero = true; }
+	      else           { vsumb += j.p; b_nonzero = true; }
+	    }
+
+	    // Calculate phi_2
+      if (jj_type == jjtype::fb) {
+        // j1 is backward, j2 is forward
+  	    Double_t phi2;
+  	    if (f_nonzero && b_nonzero) {
+  	      phi2 = fphi2(vsumb,vsumf);
+  	    } else if (!f_nonzero) {
+  	      vsumb -= jets[j2].p;
+  	      phi2 = fphi2(vsumb,jets[j2].p);
+  	    } else {
+  	      vsumf -= jets[j1].p;
+  	      phi2 = fphi2(jets[j1].p,vsumf);
+  	    }
+
+  	    h_H_jj_phi2.Fill(phi2);
       }
-      jjfb_dy   = jets[jf].y - jets[jb].y;
-      jjfb_dphi = fmod( abs(jets[jb].phi - jets[jf].phi), M_PI);
-      jjfb_ycenter = (jets[jf].y + jets[jb].y)/2;
-    
-      jjpT = jets[0 ].p + jets[1 ].p;
-      jjfb = jets[jb].p + jets[jf].p;
-      
-      jjpT_mass = jjpT.M();
-      jjfb_mass = jjfb.M();
-      
-      jjpT_VBF = (!VBF) || (jjpT_dy>2.8 && jjpT_mass>400);
-      jjfb_VBF = (!VBF) || (jjfb_dy>2.8 && jjfb_mass>400);
-      
-      // ***** Histograms *****
-
-      // Leading pT jets as tagging
-      if (jjpT_VBF) {
-
-        h_jjpT_dy  .Fill(jjpT_dy);
-        h_jjpT_dphi.Fill(jjpT_dphi);
-        
-        if (nj==njets) h_jjpT_dy_nj_excl.Fill(jjpT_dy);
-        else           h_jjpT_dy_nRj_excl.Fill(jjpT_dy);
-        
-        const Double_t H_jj_dphi = dphi(jjpT,H_phi);
-
-        h_jjpT_mass  .Fill( jjpT_mass );
-        h_HjjpT_mass .Fill( (higgs + jjpT).M() );
-        h_H_jjpT_dy  .Fill( abs(H_y - jjpT.Rapidity()) );
-        h_H_jjpT_dphi.Fill( H_jj_dphi );
-        h_H_jjpT_dy_avgyjj.Fill( H_y - jjpT_ycenter );
-        
-        h_jjpT_loose .Fill( 0.5 );
-        if (H_jj_dphi > 2.6) h_jjpT_tight.Fill( 0.5 );
-
-        h_jjpT_N_jhj_excl.Fill( between(jets[0].y,H_y,jets[1].y) ? nj : 0 );
-        
-		    if (njets>2) {
-          // Third photon veto:
-          // ydists is the smallest distance between the centre of the
-          // tagging jets and any possible further jet
-          Double_t y_dists = 100.;
-          for (size_t j=2; j<nj; ++j) {
-            Double_t y_distt = fabs(jets[j].y - jjpT_ycenter);
-            if (y_distt < y_dists) y_dists = y_distt;
-          }
-          h_jjpT_j_dy_veto.FillIncl(y_dists);
-		    }
-
-      } // END jjpT_VBF
-
-      // Forward-backward jets as tagging
-      if (jjfb_VBF) {
-
-        h_jjfb_dy  .Fill(jjfb_dy);
-        h_jjfb_dphi.Fill(jjfb_dphi);
-        
-        if (nj==njets) h_jjfb_dy_nj_excl .Fill(jjfb_dy);
-        else           h_jjfb_dy_nRj_excl.Fill(jjfb_dy);
-        
-        const Double_t H_jj_dphi = dphi(jjfb,H_phi);
-
-        h_jjfb_mass  .Fill( jjfb_mass );
-        h_Hjjfb_mass .Fill( (higgs + jjfb).M() );
-        h_H_jjfb_dy  .Fill( abs(H_y - jjfb.Rapidity()) );
-        h_H_jjfb_dphi.Fill( H_jj_dphi );
-        h_H_jjfb_dy_avgyjj.Fill( H_y - jjfb_ycenter );
-        
-        h_jjfb_loose .Fill( 0.5 );
-        if (H_jj_dphi > 2.6) h_jjfb_tight.Fill( 0.5 );
-
-        h_jjfb_N_jhj_excl.Fill( between(jets[jb].y,H_y,jets[jb].y) ? nj : 0 );
-        
-		    if (njets>2) {
-          // Third photon veto:
-          // ydists is the smallest distance between the centre of the
-          // tagging jets and any possible further jet
-          Double_t y_dists = 100.;
-          for (size_t j=0; j<nj; ++j) {
-            if (j==jb || j==jf) continue;
-            Double_t y_distt = fabs(jets[j].y - jjfb_ycenter);
-            if (y_distt < y_dists) y_dists = y_distt;
-          }
-          h_jjfb_j_dy_veto.FillIncl(y_dists);
-		    }
-        
-		    // Calculation of phi_2 from arXiv:1001.3822  
-		    // phi_2 = azimuthal angle between the vector sum of jets 
-		    // forward and jets backward of the Higgs boson
-
-		    TLorentzVector vsumf(0.,0.,0.,0.);
-		    TLorentzVector vsumb(0.,0.,0.,0.);
-		
-		    Double_t f_nonzero = false, b_nonzero = false;
-		    for (const auto& j : jets) {
-		      if (j.y > H_y) { vsumf += j.p; f_nonzero = true; }
-		      else           { vsumb += j.p; b_nonzero = true; }
-		    }
-
-		    // Calculate phi_2
-		    Double_t phi2;
-		    if (f_nonzero && b_nonzero) {
-		      phi2 = fphi2(vsumb,vsumf);
-		    } else if (!f_nonzero) {
-		      vsumb -= jets[jf];
-		      phi2 = fphi2(vsumb,jets[jf]);
-		    } else { 
-		      vsumf -= jets[jb];
-		      phi2 = fphi2(jets[jb],vsumf);
-		    }
-		
-		    h_H_jj_phi2.Fill(phi2);
-
-      } // END jjfb_VBF
 
 		  // Diphoton histograms
 		  if (AAntuple) {
@@ -751,26 +673,24 @@ int main(int argc, char** argv)
         );
 
         h_AA_dy.Fill( fabs(A1.Rapidity() - A2.Rapidity()) );
-        
+
 		  } // END AA
 
     } // END if (njets>1)
 
-    if (jjpT_VBF) {
-      Double_t jets_HT = 0, jets_tau_max = 0, jets_tau_sum = 0;
-      for (const auto& jet : jets) {
-        jets_HT += jet.pT;
-        jets_tau_sum += jet.tau;
-        if (jet.tau > jets_tau_max) jets_tau_max = jet.tau;
-      }
-
-      h_jets_HT.Fill(jets_HT);
-      h_jets_tau_max.Fill(jets_tau_max);
-      h_jets_tau_sum.Fill(jets_tau_sum);
+    Double_t jets_HT = 0, jets_tau_max = 0, jets_tau_sum = 0;
+    for (const auto& jet : jets) {
+      jets_HT += jet.pT;
+      jets_tau_sum += jet.tau;
+      if (jet.tau > jets_tau_max) jets_tau_max = jet.tau;
     }
 
+    h_jets_HT.Fill(jets_HT);
+    h_jets_tau_max.Fill(jets_tau_max);
+    h_jets_tau_sum.Fill(jets_tau_sum);
+
   } // END of event loop ********************************************
-  
+
   // finish correcting Sumw2
   for (auto h : hist_wt::all) {
     h->FillSumw2();

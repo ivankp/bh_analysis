@@ -96,7 +96,7 @@ lib/overlay.o: tools/propmap.hh tools/hist_range.hh
 
 lib/cross_section_bh.o: parts/BHEvent.hh
 
-$(HIST_OBJ): tools/csshists.hh tools/int_range.hh tools/real_range.hh tools/timed_counter.hh tools/catstr.hh parts/BHEvent.hh parts/SJClusterAlg.hh parts/weight.hh parts/hist_wt.hh parts/fj_jetdef.hh
+$(HIST_OBJ): tools/csshists.hh tools/int_range.hh tools/real_range.hh tools/timed_counter.hh tools/catstr.hh tools/senum.hh parts/BHEvent.hh parts/SJClusterAlg.hh parts/weight.hh parts/hist_wt.hh parts/fj_jetdef.hh
 
 # EXE dependencies ##################################################
 bin/inspect_bh: lib/BHEvent.o

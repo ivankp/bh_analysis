@@ -80,15 +80,15 @@ jets_tau_sum {
   Bins: 5 -0.5 4.5;
 }
 
-jj[^_]*_mass {
+jj_mass {
   Bins: 35 0 700;
 }
 
-Hjj[^_]*_mass {
+Hjj_mass {
   Bins: 30 150 2000;
 }
 
-.*_(loose|tight)_.* {
+.*_(loose|tight)(?:_.*)? {
   Bins: 1 0 1;
 }
 
