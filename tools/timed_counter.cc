@@ -30,9 +30,9 @@ void timed_counter::operator()(const num_t& ent) noexcept {
     if (newline) cout << endl;
     else {
       cout.flush();
-      if (hours)        for (char i=0;i<24;i++) cout << '\b';
-      else if (minutes) for (char i=0;i<18;i++) cout << '\b';
-      else              for (char i=0;i<16;i++) cout << '\b';
+      if (hours)        for (char i=0;i<24;++i) cout << '\b';
+      else if (minutes) for (char i=0;i<18;++i) cout << '\b';
+      else              for (char i=0;i<16;++i) cout << '\b';
     }
 
     last_time = cur_time;
