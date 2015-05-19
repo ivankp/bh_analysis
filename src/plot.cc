@@ -75,8 +75,8 @@ string combine(const T& container) {
 int main(int argc, char** argv)
 {
   // START OPTIONS **************************************************
-  string fin_name, title;
-  string fout_name;
+  string fin_name, fout_name, title;
+  vector<string> labels;
   float of_lim;
   bool of_lim_set = false;
   unsigned sigma_prec;
@@ -92,6 +92,8 @@ int main(int argc, char** argv)
      "output pdf plots")
     ("title,t", po::value<string>(&title),
      "string appended to each title")
+    ("label,l", po::value<vector<string>>(&labels),
+     "add a label")
     ("sigma-prec", po::value<unsigned>(&sigma_prec)->default_value(3),
      "number of significant digits in cross section")
     ("overflow", po::value<float>(&of_lim),
@@ -194,7 +196,7 @@ int main(int argc, char** argv)
     }
 
     // Cross section
-    const Double_t sigma   = ( h_var == var::N && h_name.find("incl") != string::npos
+    const Double_t sigma   = ( h_var==var::N && h_name.find("incl")!=string::npos
                            ? h_cent->GetAt(1)
                            : h_cent->Integral(0,nbins+1) )/N_events;
     const Double_t sigma_u = h_cent->GetAt(0)/N_events;
@@ -350,24 +352,24 @@ int main(int argc, char** argv)
     if (draw_pdf_unc)   leg.AddEntry(&g_pdf,   "PDF");
     leg.Draw();
 
-    const Double_t lbl_y2 =
+    Double_t lbl_y =
       ( draw_scale_unc || draw_pdf_unc ? 0.82 : 0.88 );
 
-    TLatex cs_lbl(0.73,lbl_y2, sigma_prt(sigma,sigma_prec).c_str());
+    TLatex cs_lbl(0.73,lbl_y, sigma_prt(sigma,sigma_prec).c_str());
     cs_lbl.SetNDC();
     cs_lbl.SetTextAlign(13);
     cs_lbl.SetTextFont(42);
     cs_lbl.SetTextSize(0.035);
     cs_lbl.Draw();
 
-    TLatex N_lbl(0.73,lbl_y2-0.04, Form("Ent: %ld",lround(h_cent->GetEntries())));
+    TLatex N_lbl(0.73,lbl_y-=0.04, Form("Ent: %ld",lround(h_cent->GetEntries())));
     N_lbl.SetNDC();
     N_lbl.SetTextAlign(13);
     N_lbl.SetTextFont(42);
     N_lbl.SetTextSize(0.035);
     N_lbl.Draw();
 
-    TText jet_alg_lbl(0.73,lbl_y2-0.08,("Jet alg: "+combine(jet_alg)).c_str());
+    TText jet_alg_lbl(0.73,lbl_y-=0.04,("Jet alg: "+combine(jet_alg)).c_str());
     jet_alg_lbl.SetNDC();
     jet_alg_lbl.SetTextAlign(13);
     jet_alg_lbl.SetTextFont(42);
@@ -376,12 +378,22 @@ int main(int argc, char** argv)
 
     unique_ptr<TLatex> pdf_lbl;
     if (pdf_name.size()) {
-      pdf_lbl.reset( new TLatex(0.73,lbl_y2-0.12, ("PDF: "+combine(pdf_name)).c_str()) );
+      pdf_lbl.reset( new TLatex(0.73,lbl_y-=0.04, ("PDF: "+combine(pdf_name)).c_str()) );
       pdf_lbl->SetNDC();
       pdf_lbl->SetTextAlign(13);
       pdf_lbl->SetTextFont(42);
       pdf_lbl->SetTextSize(0.035);
       pdf_lbl->Draw();
+    }
+    
+    vector<unique_ptr<TLatex>> lbl;
+    for (const string& lbl_name : labels) {
+      lbl.emplace_back( new TLatex(0.73,lbl_y-=0.045, lbl_name.c_str()) );
+      lbl.back()->SetNDC();
+      lbl.back()->SetTextAlign(13);
+      lbl.back()->SetTextFont(42);
+      lbl.back()->SetTextSize(0.035);
+      lbl.back()->Draw();
     }
 
     unique_ptr<TText> u_lbl, o_lbl;

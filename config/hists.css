@@ -1,9 +1,0 @@
-.* {
-  Class: TH1F;
-  Bins: 100 0 1000;
-  Sumw2: false;
-}
-
-pid {
-  Bins: 40 -10 30;
-}

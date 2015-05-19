@@ -64,15 +64,7 @@ jet4_mass {
   Bins: 20 -1 1;
 }
 
-jet\d_tau {
-  Bins: 25 0 100;
-}
-
-jets_tau_max {
-  Bins: 25 0 100;
-}
-
-jets_tau_sum {
+jet(\d|s)_tau(?:_.*)? {
   Bins: 25 0 150;
 }
 
@@ -86,6 +78,14 @@ jj[^_]*_mass {
 
 Hjj[^_]*_mass {
   Bins: 30 150 2000;
+}
+
+AA_pTt {
+  Bins: 25 0 50;
+}
+
+AA_cos_theta_star(?:_.*)? {
+  Bins: 25 0 1;
 }
 
 .*_(loose|tight)(?:_.*)? {
