@@ -59,7 +59,7 @@ inline Double_t fphi2(const TLorentzVector& b, const TLorentzVector& f) noexcept
   const Double_t bx=b.Px(), by=b.Py(), fx=f.Px(), fy=f.Py();
 
   const Double_t phi2 = acos( ( bx*fx+by*fy ) /
-    sqrt(bx*bx+by*by) * sqrt(fx*fx+fy*fy)
+    ( sqrt(bx*bx+by*by) * sqrt(fx*fx+fy*fy) )
   );
   if ( ( bx*fy - by*fx ) < 0.) return -phi2;
   else return phi2;
@@ -257,10 +257,12 @@ int main(int argc, char** argv)
   // Weights tree branches ******************************************
   if (wt_given) {
     cout << endl;
+    wt_tree->SetBranchStatus("*",0);
     if (weights.size()) {
       cout << "Selected weights:" << endl;
       for (auto& w : weights) {
         cout << w << endl;
+        bh_tree->SetBranchStatus(w.c_str(), true);
         weight::add(wt_tree,w);
       }
     } else {
@@ -289,7 +291,7 @@ int main(int argc, char** argv)
     for ( Int_t i=0, n=brs->GetEntries(); i<n; ++i ) {
       TBranch *br = static_cast<TBranch*>( brs->At(i) );
       if (!br->TestBit(kDoNotProcess)) {
-        cout << br->GetName() << " added to cache" << endl;
+        // cout << br->GetName() << " added to cache" << endl;
         bh_tree->AddBranchToCache(br,kTRUE);
       }
       bh_tree->StopCacheLearningPhase();
@@ -301,7 +303,7 @@ int main(int argc, char** argv)
       for ( Int_t i=0, n=brs->GetEntries(); i<n; ++i ) {
         TBranch *br = static_cast<TBranch*>( brs->At(i) );
         if (!br->TestBit(kDoNotProcess)) {
-          cout << br->GetName() << " added to cache" << endl;
+          // cout << br->GetName() << " added to cache" << endl;
           wt_tree->AddBranchToCache(br,kTRUE);
         }
       }
@@ -314,7 +316,7 @@ int main(int argc, char** argv)
       for ( Int_t i=0, n=brs->GetEntries(); i<n; ++i ) {
         TBranch *br = static_cast<TBranch*>( brs->At(i) );
         if (!br->TestBit(kDoNotProcess)) {
-          cout << br->GetName() << " added to cache" << endl;
+          // cout << br->GetName() << " added to cache" << endl;
           sj_tree->AddBranchToCache(br,kTRUE);
         }
       }
@@ -397,8 +399,7 @@ int main(int argc, char** argv)
   hist_wt h_jjfb_dy_nj_excl ( njets>1 ? cat("jjfb_dy_",njets, "j_excl") : string() ),
           h_jjfb_dy_nRj_excl( njets>1 ? cat("jjfb_dy_",njetsR,"j_excl") : string() );
 
-  h_jj(jjpT_dphi); h_jj(jjfb_dphi);
-
+  h_jj(jjpT_dphi);   h_jj(jjfb_dphi);
   h_jj(jjpT_mass);   h_jj(jjfb_mass);
   h_jj(HjjpT_mass);  h_jj(Hjjfb_mass);
   h_jj(H_jjpT_dy);   h_jj(H_jjpT_dy_avgyjj);
@@ -596,7 +597,7 @@ int main(int argc, char** argv)
 
     H_pT  = higgs.Pt();  // Higgs Pt
     H_phi = higgs.Phi(); // Higgs Phi
-
+    
     if (njets>1) {
 
       jjpT = jets[0 ].p + jets[1 ].p;
@@ -622,6 +623,7 @@ int main(int argc, char** argv)
       jjpT_ycenter = (jets[0].y + jets[1].y)/2;
 
       // find most forward and backward jets
+      jb = jf = 0;
       for (size_t j=1; j<nj; ++j) {
         if (jets[j].y < jets[jb].y) jb = j;
         if (jets[j].y > jets[jf].y) jf = j;
