@@ -1,0 +1,105 @@
+#!/bin/bash
+
+exe=/home/ivanp/work/bh_analysis/bin/hist_Hjets
+#dir=/msu/data/t3work2/ivanp
+dir=/users/ipogrebnyak
+out=$dir/condor
+
+group_size=100
+
+mkdir -p $out
+mkdir -p $dir/hist
+
+db="$dir/ntuples.db"
+
+#####################################################################
+
+for jalg in AntiKt4
+do
+
+for VBF in none
+do
+
+for set in `sqlite3 $db "
+  SELECT distinct particle, njets, energy, part, wt.scales
+  FROM bh
+  JOIN wt ON bh.id = wt.bh_id
+  WHERE wt.scales = 'HT2-unc' and particle = 'H'
+"`; do
+
+arr=(`echo $set | tr '|' ' '`)
+arr[2]=`printf "%.0f" ${arr[2]}` # round real-valued energy
+base="${arr[0]}${arr[1]}j_${arr[2]}TeV_${arr[3]}_${arr[4]}_$jalg"
+
+if [ "$VBF" != "none" ]; then
+  base=$base"_VBF$VBF"
+fi
+
+sql="
+  FROM bh
+  JOIN wt ON bh.id = wt.bh_id
+  WHERE particle='${arr[0]}' and njets=${arr[1]} and
+        energy=${arr[2]} and part='${arr[3]}' and wt.scales='${arr[4]}'
+"
+
+min=`sqlite3 $db "SELECT min(sid) $sql"`
+max=`sqlite3 $db "SELECT max(sid) $sql"`
+
+(( begin = min     ))
+(( end   = min - 1 ))
+
+while true; do # loop over sid subgroup
+
+(( begin = end + 1 ))
+(( end = begin + group_size - 1 ))
+
+if [ `python -c "print ($max-$end) < ($group_size*0.5)"` == "True" ]; then
+  (( end = max ))
+fi
+
+name=$base"_$begin-$end"
+
+echo $name
+
+# Form arguments
+
+args="-o $dir/hist/$name.root -j ${arr[1]} -c $jalg --VBF=$VBF --cache=500"
+
+if [ "${arr[0]}" == "AA" ]; then
+  args="$args --AA"
+fi
+
+args="$args `sqlite3 $db "
+  SELECT bh.dir, bh.file, wt.dir, wt.file $sql 
+  and sid >= $begin and sid <= $end
+" | sed 's/\(.*\)|\(.*\)|\(.*\)|\(.*\)/--bh=\1\/\2 --wt=\3\/\4/'`"
+
+# Form temporary wrapper script
+
+echo "#!/bin/bash" > $out/$name.sh
+echo $exe $args >> $out/$name.sh
+chmod +x $out/$name.sh
+
+# Form condor script
+
+echo "
+Universe   = vanilla
+Executable = $out/$name.sh
+Error      = $out/$name.err
+Output     = $out/$name.out
+Log        = $out/$name.log
+getenv = True
+Queue
+"
+# | condor_submit - > /dev/null
+
+if [ $end -ge $max ]; then break; fi
+
+done
+
+done
+done
+done
+
+echo 'DONE!'
+
