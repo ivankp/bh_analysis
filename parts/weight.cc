@@ -5,10 +5,13 @@ using namespace std;
 weight::weight(TTree *tree, const string& name, bool is_float)
 : name(name), is_float(is_float)
 {
-  TBranch* const br = tree->GetBranch(name.c_str());
-  if (br) {
-    if (is_float) br->SetAddress(&w.f);
-    else br->SetAddress(&w.d);
+  if ( tree->GetBranch(name.c_str()) ) {
+
+    tree->SetBranchStatus(name.c_str(), true);
+
+    if (is_float) tree->SetBranchAddress(name.c_str(), &w.f);
+    else tree->SetBranchAddress(name.c_str(), &w.d);
+
   } else exit(1);
 }
 

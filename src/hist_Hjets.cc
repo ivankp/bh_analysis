@@ -258,7 +258,6 @@ int main(int argc, char** argv)
       cout << "Selected weights:" << endl;
       for (auto& w : weights) {
         cout << w << endl;
-        wt_tree->SetBranchStatus(w.c_str(), true);
         weight::add(wt_tree,w);
       }
     } else {
@@ -272,7 +271,6 @@ int main(int argc, char** argv)
     }
     cout << endl;
   } else { // Use default ntuple weight2
-    bh_tree->SetBranchStatus("weight2", true);
     weight::add(bh_tree,"weight2",false);
   }
   

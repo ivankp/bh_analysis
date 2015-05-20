@@ -10,7 +10,7 @@ timed_counter::timed_counter(bool newline)
 { }
 
 void timed_counter::prt(const num_t& ent) const noexcept {
-  cout << setw(10) << ent << " | ";
+  cout << setw(12) << ent << " | ";
   if (hours) {
     cout << setw(5) << hours << ':'
     << setfill('0') << setw(2) << minutes << ':'
@@ -30,9 +30,9 @@ void timed_counter::operator()(const num_t& ent) noexcept {
     if (newline) cout << endl;
     else {
       cout.flush();
-      if (hours)        for (char i=0;i<24;++i) cout << '\b';
-      else if (minutes) for (char i=0;i<18;++i) cout << '\b';
-      else              for (char i=0;i<16;++i) cout << '\b';
+      if (hours)        for (char i=0;i<26;++i) cout << '\b';
+      else if (minutes) for (char i=0;i<20;++i) cout << '\b';
+      else              for (char i=0;i<18;++i) cout << '\b';
     }
 
     last_time = cur_time;
