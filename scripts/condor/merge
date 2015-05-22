@@ -1,0 +1,67 @@
+#!/bin/bash
+
+dir=../../data/hist
+
+mkdir -p $dir/merged
+mkdir -p $dir/plots
+
+# hadd same parts
+for f in `ls "$dir/raw" |
+  sed 's/\(.*\)\(_B\|_I\|_RS\|_V\)\([^_]*\)_\(.*\)_\([0-9]*-[0-9]*\)\.root$/\1\2_\4/' | sort | uniq`
+do
+
+  pattern=`echo $f | sed 's/\([^_]*\)_\([^_]*\)_\([^_]*\)_\(.*\)/\1_\2_\3.*_\4_[0-9]*-[0-9]*/'`
+
+  arr=(`ls "$dir/raw" | grep $pattern` )
+  for ((i=0; i < ${#arr[@]}; i++)); do
+     arr[$i]=`echo "$dir/raw/${arr[$i]}"`
+  done
+
+  if [ ! -f "$dir/merged/$f.root" ]; then
+    if [ "${#arr[@]}" -eq "1" ]; then
+      # copy if there's only one file
+      cp -v ${arr[0]} "$dir/merged/$f.root"
+    else
+      # merge if there are many
+      hadd "$dir/merged/$f.root" ${arr[*]}
+    fi
+  fi
+
+done
+
+# merge different parts
+for f in `ls "$dir/merged" |
+  sed 's/\(_B_\|_I_\|_RS_\|_V_\)/_NLO_/' | sort | uniq`
+do
+
+  echo $f
+
+  arr=(`echo $f | sed 's/\(.*_\)NLO\(_.*\)/\1B\2 \1I\2 \1V\2 \1RS\2/'`)
+  for ((i=0; i < ${#arr[@]}; i++)); do
+     arr[$i]=`echo "$dir/merged/${arr[$i]}"`
+  done
+
+  if [ ! -f "$dir/merged/$f" ]; then
+    if [ -f "${arr[0]}" ] && [ -f "${arr[1]}" ] && [ -f "${arr[2]}" ] && [ -f "${arr[3]}" ]
+    then
+      ../../bin/merge_parts "$dir/merged/$f" ${arr[*]}
+      echo ""
+    fi
+  fi
+
+done
+
+# make plots
+for f in `ls "$dir/merged"`; do
+
+  if [ ! -f "$dir/plots/$f" ]; then
+    if [[ $f == *"HT2-mH-cmp"* ]]; then
+      ../../bin/overlay "$dir/merged/$f" "$dir/plots/$f"
+    else
+      ../../bin/plots "$dir/merged/$f" -o "$dir/plots/$f"
+    fi
+    echo ""
+  fi
+
+done
+
