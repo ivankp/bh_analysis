@@ -1,11 +1,10 @@
 #!/bin/bash
 
 exe=/home/ivanp/work/bh_analysis/bin/hist_Hjets
-#dir=/msu/data/t3work2/ivanp
-dir=/users/ipogrebnyak
+dir=/msu/data/t3work2/ivanp
 out=$dir/condor
 
-group_size=100
+group_size=1000
 
 mkdir -p $out
 mkdir -p $dir/hist
@@ -17,14 +16,14 @@ db="$dir/ntuples.db"
 for jalg in AntiKt4
 do
 
-for VBF in none
+for VBF in none hardest any
 do
 
 for set in `sqlite3 $db "
   SELECT distinct particle, njets, energy, part, wt.scales
   FROM bh
   JOIN wt ON bh.id = wt.bh_id
-  WHERE wt.scales = 'HT2-unc' and particle = 'H'
+  WHERE wt.scales = 'HT2-unc' and particle = 'AA'
 "`; do
 
 arr=(`echo $set | tr '|' ' '`)
@@ -90,8 +89,7 @@ Output     = $out/$name.out
 Log        = $out/$name.log
 getenv = True
 Queue
-"
-# | condor_submit - > /dev/null
+" | condor_submit - > /dev/null
 
 if [ $end -ge $max ]; then break; fi
 
@@ -102,4 +100,8 @@ done
 done
 
 echo 'DONE!'
+
+# notification = Complete
+# notify_user  = ivanp@msu.edu
+
 
