@@ -46,7 +46,7 @@ int main(int argc, char** argv)
     // Current input file
     TFile *f = new TFile(argv[fi],"read");
     if (f->IsZombie()) exit(1);
-    cout << "\nInput file: " << f->GetName() << endl;
+    cout << "Input file: " << f->GetName() << endl;
 
     // Number of events
     const Double_t N = get<TH1D>(f,"N")->GetAt(1);

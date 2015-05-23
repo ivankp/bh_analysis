@@ -1,9 +1,13 @@
 #!/bin/bash
 
-dir=../../data/hist
+dir=/home/ivanp/disk2/hist
 
 mkdir -p $dir/merged
 mkdir -p $dir/plots
+
+cnt1=0
+cnt2=0
+cnt3=0
 
 # hadd same parts
 for f in `ls "$dir/raw" |
@@ -25,16 +29,17 @@ do
       # merge if there are many
       hadd "$dir/merged/$f.root" ${arr[*]}
     fi
+    ((++cnt1))
   fi
 
 done
+
+if [ "$cnt1" -eq "0" ]; then echo "Nothing to hadd"; fi
 
 # merge different parts
 for f in `ls "$dir/merged" |
   sed 's/\(_B_\|_I_\|_RS_\|_V_\)/_NLO_/' | sort | uniq`
 do
-
-  echo $f
 
   arr=(`echo $f | sed 's/\(.*_\)NLO\(_.*\)/\1B\2 \1I\2 \1V\2 \1RS\2/'`)
   for ((i=0; i < ${#arr[@]}; i++)); do
@@ -46,22 +51,38 @@ do
     then
       ../../bin/merge_parts "$dir/merged/$f" ${arr[*]}
       echo ""
+    else
+      for ((i=0; i < 4; i++)); do
+        if [ ! -f "${arr[0]}" ]; then echo "Missing ${arr[$i]}"; fi
+      done
     fi
+    ((++cnt2))
   fi
 
 done
+
+if [ "$cnt2" -eq "0" ]; then echo "Nothing to merge"; fi
 
 # make plots
 for f in `ls "$dir/merged"`; do
 
-  if [ ! -f "$dir/plots/$f" ]; then
+  plot="$dir/plots/`basename $f .root`.pdf"
+
+  exe="../../bin/plot $dir/merged/$f -o $plot -t "
+  exe=$exe`echo $f | sed 's/\([^_]*\)_\([^_]*\)_\([^_]*\).*/\": \1-ggf \3 \2\"/'`
+  exe=$exe`echo $f | sed -n 's/.*VBF\([^_\.]*\).*/ -l \"VBF: \1\"/p'`
+
+  if [ ! -f "$plot" ]; then
     if [[ $f == *"HT2-mH-cmp"* ]]; then
       ../../bin/overlay "$dir/merged/$f" "$dir/plots/$f"
     else
-      ../../bin/plots "$dir/merged/$f" -o "$dir/plots/$f"
+      eval $exe
     fi
     echo ""
+    ((++cnt3))
   fi
 
 done
+
+if [ "$cnt3" -eq "0" ]; then echo "Nothing to plot"; fi
 

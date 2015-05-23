@@ -806,32 +806,29 @@ int main(int argc, char** argv)
       }
   
       h_H_jj_phi2.Fill(phi2);
-      // ----------------------------------------
-
-      // Diphoton histograms
-      // ----------------------------------------
-      if (AAntuple) {
-      
-        // |costheta*| from 1307.1432
-        const Double_t cts =
-          abs(sinh(A1.Eta()-A2.Eta())) / sqrt(1.+sq(H_pT/H_mass)) *
-          A1.Pt()*A2.Pt()*2 / sq(H_mass);
-
-        h_AA_cos_theta_star.Fill(cts);
-        if (H_pT<80) h_AA_cos_theta_star_AApT80.Fill(cts);
-        else if (H_pT<200) h_AA_cos_theta_star_80AApT200.Fill(cts);
-        else h_AA_cos_theta_star_200AApT.Fill(cts);
-
-        h_AA_pTt.Fill(
-          abs(A1.Px()*A2.Py()-A2.Px()*A1.Py()) / ((A1-A2).Pt()*2)
-        );
-
-        h_AA_dy.Fill( abs(A1.Rapidity() - A2.Rapidity()) );
-        
-      } // END AA
-      // ----------------------------------------
 
     } // END if (njets>1)
+
+    // Diphoton histograms
+    if (AAntuple) {
+    
+      // |costheta*| from 1307.1432
+      const Double_t cts =
+        abs(sinh(A1.Eta()-A2.Eta())) / sqrt(1.+sq(H_pT/H_mass)) *
+        A1.Pt()*A2.Pt()*2 / sq(H_mass);
+
+      h_AA_cos_theta_star.Fill(cts);
+      if (H_pT<80) h_AA_cos_theta_star_AApT80.Fill(cts);
+      else if (H_pT<200) h_AA_cos_theta_star_80AApT200.Fill(cts);
+      else h_AA_cos_theta_star_200AApT.Fill(cts);
+
+      h_AA_pTt.Fill(
+        abs(A1.Px()*A2.Py()-A2.Px()*A1.Py()) / ((A1-A2).Pt()*2)
+      );
+
+      h_AA_dy.Fill( abs(A1.Rapidity() - A2.Rapidity()) );
+      
+    } // END AA
 
     // Jets tau
     Double_t jets_HT = 0, jets_tau_max = 0, jets_tau_sum = 0;

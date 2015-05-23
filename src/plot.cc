@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <locale>
 #include <string>
 #include <vector>
 #include <set>
@@ -71,6 +72,12 @@ string combine(const T& container) {
   for (;it!=end;++it) s += ", " + *it;
   return s;
 }
+
+class comma_numpunct : public std::numpunct<char> {
+protected:
+  virtual char do_thousands_sep()   const { return ','; }
+  virtual std::string do_grouping() const { return "\03"; }
+};
 
 int main(int argc, char** argv)
 {
@@ -362,7 +369,10 @@ int main(int argc, char** argv)
     cs_lbl.SetTextSize(0.035);
     cs_lbl.Draw();
 
-    TLatex N_lbl(0.73,lbl_y-=0.04, Form("Ent: %ld",lround(h_cent->GetEntries())));
+    stringstream ent_ss;
+    ent_ss.imbue({locale(), new comma_numpunct()});
+    ent_ss << "Ent: " << lround(h_cent->GetEntries());
+    TLatex N_lbl(0.73,lbl_y-=0.04, ent_ss.str().c_str());
     N_lbl.SetNDC();
     N_lbl.SetTextAlign(13);
     N_lbl.SetTextFont(42);
