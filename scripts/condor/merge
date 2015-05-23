@@ -9,14 +9,12 @@ cnt1=0
 cnt2=0
 cnt3=0
 
-# hadd same parts
+# hadd same parts -----------------------------------------
 for f in `ls "$dir/raw" |
-  sed 's/\(.*\)\(_B\|_I\|_RS\|_V\)\([^_]*\)_\(.*\)_\([0-9]*-[0-9]*\)\.root$/\1\2_\4/' | sort | uniq`
+  sed 's/\(.*\)_[0-9]*-[0-9]*\.root$/\1/' | sort | uniq`
 do
 
-  pattern=`echo $f | sed 's/\([^_]*\)_\([^_]*\)_\([^_]*\)_\(.*\)/\1_\2_\3.*_\4_[0-9]*-[0-9]*/'`
-
-  arr=(`ls "$dir/raw" | grep $pattern` )
+  arr=(`ls "$dir/raw" | grep $f"_[0-9]*-[0-9]*\.root$"` )
   for ((i=0; i < ${#arr[@]}; i++)); do
      arr[$i]=`echo "$dir/raw/${arr[$i]}"`
   done
@@ -33,44 +31,36 @@ do
   fi
 
 done
-
 if [ "$cnt1" -eq "0" ]; then echo "Nothing to hadd"; fi
 
-# merge different parts
+# merge different parts -----------------------------------
 for f in `ls "$dir/merged" |
-  sed 's/\(_B_\|_I_\|_RS_\|_V_\)/_NLO_/' | sort | uniq`
+  sed -n 's/\(.*\)_\(\(B\|I\|RS\|V\)[^_]*\)_\(.*\)/\1\.\*\4/p' | sort | uniq`
 do
 
-  arr=(`echo $f | sed 's/\(.*_\)NLO\(_.*\)/\1B\2 \1I\2 \1V\2 \1RS\2/'`)
+  arr=(`ls "$dir/merged" | grep $f | grep -v "_NLO_"`)
   for ((i=0; i < ${#arr[@]}; i++)); do
      arr[$i]=`echo "$dir/merged/${arr[$i]}"`
   done
 
   if [ ! -f "$dir/merged/$f" ]; then
-    if [ -f "${arr[0]}" ] && [ -f "${arr[1]}" ] && [ -f "${arr[2]}" ] && [ -f "${arr[3]}" ]
-    then
-      ../../bin/merge_parts "$dir/merged/$f" ${arr[*]}
-      echo ""
-    else
-      for ((i=0; i < 4; i++)); do
-        if [ ! -f "${arr[0]}" ]; then echo "Missing ${arr[$i]}"; fi
-      done
-    fi
+    ../../bin/merge_parts "$dir/merged/"`echo $f | sed 's/\.\*/_NLO_/'` ${arr[*]}
+    echo ""
     ((++cnt2))
   fi
 
 done
-
 if [ "$cnt2" -eq "0" ]; then echo "Nothing to merge"; fi
 
-# make plots
+# make plots ----------------------------------------------
 for f in `ls "$dir/merged"`; do
 
   plot="$dir/plots/`basename $f .root`.pdf"
 
   exe="../../bin/plot $dir/merged/$f -o $plot -t "
-  exe=$exe`echo $f | sed 's/\([^_]*\)_\([^_]*\)_\([^_]*\).*/\": \1-ggf \3 \2\"/'`
-  exe=$exe`echo $f | sed -n 's/.*VBF\([^_\.]*\).*/ -l \"VBF: \1\"/p'`
+  exe=$exe`echo $f | sed 's/\([^_]*\)_\([^_]*\)_\([^_]*\).*/\": \1 \3 \2\"/'`
+  exe=$exe`echo $f | sed -n 's/.*VBF\([^_\.]*\).*/ -l \"VBF cut: \1\"/p'`
+  exe=$exe`echo $f | sed -n 's/.*MAA\([^_\.]*\).*/ -l \"m_\{AA\} cut: \1\"/p'`
 
   if [ ! -f "$plot" ]; then
     if [[ $f == *"HT2-mH-cmp"* ]]; then
@@ -83,6 +73,5 @@ for f in `ls "$dir/merged"`; do
   fi
 
 done
-
 if [ "$cnt3" -eq "0" ]; then echo "Nothing to plot"; fi
 

@@ -3,15 +3,18 @@
 exe=/home/ivanp/work/bh_analysis/bin/hist_Hjets
 dir=/msu/data/t3work2/ivanp
 out=$dir/condor
+histdir=$dir/hist/raw
 
-group_size=1000
+group_size=500
 
 mkdir -p $out
-mkdir -p $dir/hist
+mkdir -p $histdir
 
 db="$dir/ntuples.db"
 
 #####################################################################
+
+MAA="115:135"
 
 for jalg in AntiKt4
 do
@@ -32,6 +35,10 @@ base="${arr[0]}${arr[1]}j_${arr[2]}TeV_${arr[3]}_${arr[4]}_$jalg"
 
 if [ "$VBF" != "none" ]; then
   base=$base"_VBF$VBF"
+fi
+
+if [ "$MAA" ]; then
+  base=$base"_MAA"`echo $MAA | tr ':' '-'`
 fi
 
 sql="
@@ -62,10 +69,14 @@ echo $name
 
 # Form arguments
 
-args="-o $dir/hist/$name.root -j ${arr[1]} -c $jalg --VBF=$VBF --cache=500"
+args="-o $histdir/$name.root -j ${arr[1]} -c $jalg --VBF=$VBF --cache=500"
 
 if [ "${arr[0]}" == "AA" ]; then
   args="$args --AA"
+
+  if [ "$MAA" ]; then
+    args="$args --AA-mass-cut=$MAA"
+  fi
 fi
 
 args="$args `sqlite3 $db "
