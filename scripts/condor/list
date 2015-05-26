@@ -1,0 +1,67 @@
+#!/bin/bash
+
+db=plots.db
+
+if [ ! -f $db ]; then
+
+sqlite3 $db "create table plots (
+  particle TEXT,
+  njets INTEGER,
+  energy INTEGER,
+  part TEXT,
+  scales TEXT,
+  jalg TEXT,
+  vbf TEXT,
+  maa TEXT
+);"
+
+#ls ~/disk2/hist/plots | sed 's/\_/\", \"/g;s/\.pdf/\" ],/;s/^/[ \"/' | column -t
+
+for f in `ls ~/disk2/hist/plots | sed 's/\.pdf//'`; do
+
+  arr=(`echo $f | tr '_' ' '`)
+  pj=(`echo ${arr[0]} | sed 's/\([a-zA-Z]*\)\([0-9]*\)j/\1 \2/'`)
+
+  vbf="none"
+  maa="none"
+
+  for i in {6..7}; do
+    for cut in "VBF" "MAA"; do
+      match=`echo ${arr[((i-1))]} | sed -n "s/^$cut//p"`
+      if [ "$match" ]; then
+        if [ "$cut" == "VBF" ]; then
+          vbf=$match
+        elif [ "$cut" == "MAA" ]; then
+          maa=$match
+        fi
+      fi
+    done
+  done
+
+  sqlite3 $db "insert into plots
+    (particle,njets,energy,part,scales,jalg,vbf,maa)
+    values
+    ('${pj[0]}','${pj[1]}','${arr[1]}','${arr[2]}','${arr[3]}','${arr[4]}','$vbf','$maa');" 
+
+done
+
+fi
+
+sqlite3 -separator ' '  $db "select particle, njets, energy, scales, jalg, vbf, maa, part from plots
+  order by
+    particle,
+    njets,
+    energy,
+    scales,
+    jalg,
+    CASE WHEN vbf = 'none' THEN 0 
+         WHEN vbf = 'hardest' THEN 1 
+         WHEN vbf = 'any' THEN 2 END,
+    CASE WHEN maa = 'none' THEN 0 END,
+    CASE WHEN part like 'B%' THEN 0 
+         WHEN part like 'RS%' THEN 1 
+         WHEN part like 'V%' THEN 2
+         WHEN part like 'I%' THEN 3
+         WHEN part = 'NLO' THEN 4 END
+" | sed 's/ /, /g;s/^/[ /;s/$/ ],/' | column -t
+

@@ -16,6 +16,7 @@
 /scripts/condor/out
 /scripts/condor/hists
 /scripts/condor/*.tar.gz
+/scripts/condor/*.db
 /scripts/sql/*.db
 /scripts/sql/*.tar.gz
 

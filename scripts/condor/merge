@@ -9,8 +9,10 @@ cnt1=0
 cnt2=0
 cnt3=0
 
+#if false; then
+
 # hadd same parts -----------------------------------------
-for f in `ls "$dir/raw" |
+for f in `ls "$dir/raw" | grep "^AA" |
   sed 's/\(.*\)_[0-9]*-[0-9]*\.root$/\1/' | sort | uniq`
 do
 
@@ -33,10 +35,14 @@ do
 done
 if [ "$cnt1" -eq "0" ]; then echo "Nothing to hadd"; fi
 
+#fi
+
 # merge different parts -----------------------------------
-for f in `ls "$dir/merged" |
-  sed -n 's/\(.*\)_\(\(B\|I\|RS\|V\)[^_]*\)_\(.*\)/\1\.\*\4/p' | sort | uniq`
+for f in `ls "$dir/merged" | grep -v "_NLO_" |
+  sed -n 's/\(.*\)_\(\(B\|I\|RS\|V\)\(-[^_]*\)\?\)_\(.*\)/\1\.\*\5/p' | sort | uniq`
 do
+
+  echo $f
 
   arr=(`ls "$dir/merged" | grep $f | grep -v "_NLO_"`)
   for ((i=0; i < ${#arr[@]}; i++)); do
@@ -52,13 +58,15 @@ do
 done
 if [ "$cnt2" -eq "0" ]; then echo "Nothing to merge"; fi
 
+#exit
+
 # make plots ----------------------------------------------
 for f in `ls "$dir/merged"`; do
 
   plot="$dir/plots/`basename $f .root`.pdf"
 
-  exe="../../bin/plot $dir/merged/$f -o $plot -t "
-  exe=$exe`echo $f | sed 's/\([^_]*\)_\([^_]*\)_\([^_]*\).*/\": \1 \3 \2\"/'`
+  exe="../../bin/plot $dir/merged/$f -o $plot"
+  exe=$exe`echo $f | sed 's/\([^_]*\)_\([^_]*\)_\([^_]*\).*/ -t \": \1 \3 \2\"/'`
   exe=$exe`echo $f | sed -n 's/.*VBF\([^_\.]*\).*/ -l \"VBF cut: \1\"/p'`
   exe=$exe`echo $f | sed -n 's/.*MAA\([^_\.]*\).*/ -l \"m_\{AA\} cut: \1\"/p'`
 
