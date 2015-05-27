@@ -247,12 +247,14 @@ int main(int argc, char **argv)
     } else if (h_name.find("_mass") != string::npos) {
       xa->SetTitle("m, GeV");
       ya->SetTitle("d#sigma/dm, pb/GeV");
-    } else if ( (h_name.find("_deltay") != string::npos) ||
-                (h_name.find("_y") != string::npos) ) {
+    } else if ( (h_name.find("_y") != string::npos) ||
+                (h_name.find("_dy") != string::npos) ||
+                (h_name.find("_deltay") != string::npos) ) {
       xa->SetTitle("y");
       ya->SetTitle("d#sigma/dy, pb");
-    } else if ( (h_name.find("_deltaphi") != string::npos) ||
-                (h_name.find("_phi") != string::npos) ) {
+    } else if ( (h_name.find("_phi") != string::npos) ||
+                (h_name.find("_dphi") != string::npos) ||
+                (h_name.find("_deltaphi") != string::npos) ) {
       xa->SetTitle("#phi, rad");
       ya->SetTitle("d#sigma/d#phi, pb/rad");
     } else if (h_name.find("_HT") != string::npos) {

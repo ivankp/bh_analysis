@@ -5,7 +5,7 @@ dir=/msu/data/t3work2/ivanp
 out=$dir/condor
 histdir=$dir/hist/raw
 
-group_size=100
+group_size=500
 
 mkdir -p $out
 mkdir -p $histdir
@@ -14,9 +14,9 @@ db="$dir/ntuples.db"
 
 #####################################################################
 
-# MAA="115:135"
+MAA="115:135"
 
-for jalg in AntiKt5
+for jalg in AntiKt4
 do
 
 for VBF in none hardest any
@@ -26,7 +26,7 @@ for set in `sqlite3 $db "
   SELECT distinct particle, njets, energy, part, wt.scales
   FROM bh
   JOIN wt ON bh.id = wt.bh_id
-  WHERE wt.scales = 'HT2-unc' and particle = 'H'
+  WHERE wt.scales = 'HT2-unc' and particle = 'AA'
 "`; do
 
 arr=(`echo $set | tr '|' ' '`)
