@@ -7,7 +7,7 @@ if [ ! -f $db ]; then
 sqlite3 $db "create table plots (
   particle TEXT,
   njets INTEGER,
-  energy INTEGER,
+  energy TEXT,
   part TEXT,
   scales TEXT,
   jalg TEXT,
@@ -41,27 +41,34 @@ for f in `ls ~/disk2/hist/plots | sed 's/\.pdf//'`; do
   sqlite3 $db "insert into plots
     (particle,njets,energy,part,scales,jalg,vbf,maa)
     values
-    ('${pj[0]}','${pj[1]}','${arr[1]}','${arr[2]}','${arr[3]}','${arr[4]}','$vbf','$maa');" 
+    ('${pj[0]}','${pj[1]}','${arr[1]}','${arr[2]}','${arr[3]}','${arr[4]}','$vbf','$maa');"
+
+  printf '.'
 
 done
+echo ""
 
 fi
 
 sqlite3 -separator ' '  $db "select particle, njets, energy, scales, jalg, vbf, maa, part from plots
   order by
-    particle,
+    CASE WHEN particle = 'H'  THEN 0
+         WHEN particle = 'AA' THEN 1 END,
     njets,
-    energy,
+    CASE WHEN energy =  '7TeV' THEN  7
+         WHEN energy =  '8TeV' THEN  8
+         WHEN energy = '13TeV' THEN 13 END,
     scales,
     jalg,
     CASE WHEN vbf = 'none' THEN 0 
          WHEN vbf = 'hardest' THEN 1 
          WHEN vbf = 'any' THEN 2 END,
-    CASE WHEN maa = 'none' THEN 0 END,
+    CASE WHEN maa = 'none' THEN 0 ELSE 1 END,
     CASE WHEN part like 'B%' THEN 0 
          WHEN part like 'RS%' THEN 1 
          WHEN part like 'V%' THEN 2
          WHEN part like 'I%' THEN 3
-         WHEN part = 'NLO' THEN 4 END
-" | sed 's/ /, /g;s/^/[ /;s/$/ ],/' | column -t
+         WHEN part = 'NLO' THEN 4
+         WHEN part = 'ES' THEN 5 END
+" | sed 's/ /\", \"/g;s/^/[ \"/;s/$/\" ],/' | column -t
 

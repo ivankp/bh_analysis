@@ -164,7 +164,7 @@ int main(int argc, char** argv)
     po::notify(vm);
     if (vm.count("sj")) sj_given = true;
     if (vm.count("wt")) wt_given = true;
-    if (vm.count("AA_mass_cut")) apply_AA_mass_cut = true;
+    if (AAntuple && vm.count("AA-mass-cut")) apply_AA_mass_cut = true;
   }
   catch(exception& e) {
     cerr << "\033[31mError: " <<  e.what() <<"\033[0m"<< endl;
