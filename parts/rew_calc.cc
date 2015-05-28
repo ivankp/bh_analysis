@@ -179,10 +179,6 @@ void unfold(const valarray<double>& a, double& x1, double& x2) noexcept {
 }
 
 void fac_calc::calc() const noexcept {
-  // There is only one global event variable
-  // so these references always points to the right place
-  static const char& part = event.part[0];
-  static Double_t* const& usr_wgts = event.usr_wgts;
 
   const double mu = mu_f->mu();
 
@@ -201,12 +197,12 @@ void fac_calc::calc() const noexcept {
   }
 
   // Integrated subtraction
-  if (part=='I') {
+  if (event.part[0]=='I') {
 
     // Calculate terms in Eq. (43)
     lf = 2.*log( mu / event.fac_scale );
     for (short i=1;i<9;++i)
-      m[i] = usr_wgts[i+1] + usr_wgts[i+9]*lf;
+      m[i] = event.usr_wgts[i+1] + event.usr_wgts[i+9]*lf;
 
     // Calculate terms in Eq. (44)
     static Int_t id;
@@ -256,35 +252,29 @@ void fac_calc::calc() const noexcept {
 //-----------------------------------------------
 
 void ren_calc::calc() const noexcept {
-  // There is only one global event variable
-  // so these references always points to the right place
-  static const char& part = event.part[0];
-  static const Double_t& alphas  = event.alphas;
-  static const Char_t& n = event.alphas_power;
-  static const Double_t& ren_scale = event.ren_scale;
-  static Double_t* const& usr_wgts = event.usr_wgts;
 
   const double mu = mu_r->mu();
+
 
   // Calculate α_s change from renormalization
   if (!defaultPDF) {
     const double to_alphas = pdf->alphasQ(mu);
     if (new_alphas == alphas_fcn::two_mH) {
-      ar = pow(to_alphas/alphas, n-2);
+      ar = pow(to_alphas/event.alphas, event.alphas_power-2);
       if (bh_alphas != alphas_fcn::two_mH) {
-        ar *= sq(alphas_mH/alphas);
+        ar *= sq(alphas_mH/event.alphas);
       }
     } else {
-      ar = pow(to_alphas/alphas, n);
+      ar = pow(to_alphas/event.alphas, event.alphas_power);
       if (bh_alphas == alphas_fcn::two_mH) {
-        ar *= sq(alphas/alphas_mH);
+        ar *= sq(event.alphas/alphas_mH);
       }
     }
   }
 
-  if (part=='V' || part=='I') {
-    lr = 2.*log( mu / ren_scale ); // Calculate lr, same as l in Eq (30)
-    m0 = lr*usr_wgts[0] + 0.5*lr*lr*usr_wgts[1];
+  if (event.part[0]=='V' || event.part[0]=='I') {
+    lr = 2.*log( mu / event.ren_scale ); // Calculate lr, same as l in Eq (30)
+    m0 = lr*event.usr_wgts[0] + 0.5*lr*lr*event.usr_wgts[1];
   }
 
 }

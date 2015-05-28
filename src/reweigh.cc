@@ -253,6 +253,8 @@ int main(int argc, char** argv)
 
     fac[name] = _fac;
   }
+  if (!fac.size())
+    throw runtime_error("No factorization scales defined");
 
   node_loop(scales_node,"ren") {
     const char* name = get_attr(node,"name");
@@ -275,6 +277,8 @@ int main(int argc, char** argv)
 
     ren[name] = _ren;
   }
+  if (!ren.size())
+    throw runtime_error("No renormalization scales defined");
 
   node_loop(weights_node,"weight") {
     const xml_attr* pdfunc = node->first_attribute("pdfunc");
@@ -304,9 +308,9 @@ int main(int argc, char** argv)
     event.eid = ent;
 
     // REWEIGHTING
-    for (auto f : fac) f.second->calc();
-    for (auto r : ren) r.second->calc();
-    for (auto w : weights) w->stitch();
+    for (auto& f : fac) f.second->calc();
+    for (auto& r : ren) r.second->calc();
+    for (auto& w : weights) w->stitch();
     tree->Fill();
   }
   counter.prt(num_ent.second);
@@ -321,9 +325,9 @@ int main(int argc, char** argv)
   fin->Close();
   delete fin;
 
-  for (auto m : mu)  delete m.second;
-  for (auto f : fac) delete f.second;
-  for (auto r : ren) delete r.second;
+  for (auto& m : mu)  delete m.second;
+  for (auto& f : fac) delete f.second;
+  for (auto& r : ren) delete r.second;
   for (auto w : weights) delete w;
 
   return 0;
