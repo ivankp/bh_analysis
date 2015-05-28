@@ -187,7 +187,7 @@ void fac_calc::calc() const noexcept {
   const double mu = mu_f->mu();
 
   // Born & Real
-  if (defaultPDF) m[0] = event.weight;
+  if (defaultPDF) m[0] = event.weight2;
   else {
     for (short i=0;i<2;++i)
       f[0][i][0] = pdf->xfxQ(event.id[i], event.x[i], mu)/event.x[i];
@@ -310,7 +310,7 @@ void reweighter::stitch() const noexcept {
     weight[k] = s[k] * ren->ar;
 
     if (!isfinite(weight[k]))  {
-      cerr << "\033[31mEvent " << event.eid << "\033[0m: "
+      cerr << "\033[31mEntry " << event.eid << "\033[0m: "
            << "weight=" << weight[k] << endl;
       weight[k] = 0.;
     }

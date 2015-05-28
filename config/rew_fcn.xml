@@ -1,0 +1,135 @@
+<!-- Input BlackHat ntuple properties -->
+<!--
+  alphas="" or omitted: all powers of \alpha_{s} at the same chosen scale
+  alphas="two_mH": two powers of \alpha_{s} at mass of Higgs, the rest at a chosen scale
+-->
+<bh_format alphas="" />
+
+<!-- Definitions of energies of the scales -->
+<!--
+  Ht = \sum_i^{all} p_{T,i}
+    Example: <Ht name="Ht2" frac="0.5" />
+  Ht_Higgs = \sqrt{m_H^2 + p_{T,H}^2} + \sum_i^{partons} p_{T,i}
+    Example: <Ht_Higgs name="Ht2" frac="0.5" />
+  fixed = energy in GeV
+    Example: <fixed name="mH" val="125" />
+  fac_default = original ntuple factorization scale
+    Example: <fac_default name="fac_def" />
+  ren_default = original ntuple renormalization scale
+    Example: <ren_default name="ren_def" />
+-->
+<energies>
+  <Ht_Higgs name="0.125Ht" frac="0.125" />
+  <Ht_Higgs name="0.25Ht" frac="0.25" />
+  <Ht_Higgs name="0.375Ht" frac="0.375" />
+  <Ht_Higgs name="0.5Ht" frac="0.5" />
+  <Ht_Higgs name="0.625Ht" frac="0.625" />
+  <Ht_Higgs name="0.75Ht" frac="0.75" />
+  <Ht_Higgs name="0.875Ht" frac="0.875" />
+  <Ht_Higgs name="1Ht" frac="1" />
+  <Ht_Higgs name="1.125Ht" frac="1.125" />
+  <Ht_Higgs name="1.25Ht" frac="1.25" />
+  <Ht_Higgs name="1.375Ht" frac="1.375" />
+  <Ht_Higgs name="1.5Ht" frac="1.5" />
+  <Ht_Higgs name="1.625Ht" frac="1.625" />
+  <Ht_Higgs name="1.75Ht" frac="1.75" />
+  <Ht_Higgs name="1.875Ht" frac="1.875" />
+  <Ht_Higgs name="2Ht" frac="2" />
+  <Ht_Higgs name="2.125Ht" frac="2.125" />
+  <Ht_Higgs name="2.25Ht" frac="2.25" />
+  <Ht_Higgs name="2.375Ht" frac="2.375" />
+  <Ht_Higgs name="2.5Ht" frac="2.5" />
+  <Ht_Higgs name="2.625Ht" frac="2.625" />
+  <Ht_Higgs name="2.75Ht" frac="2.75" />
+  <Ht_Higgs name="2.875Ht" frac="2.875" />
+  <Ht_Higgs name="3Ht" frac="3" />
+  <Ht_Higgs name="3.125Ht" frac="3.125" />
+  <Ht_Higgs name="3.25Ht" frac="3.25" />
+  <Ht_Higgs name="3.375Ht" frac="3.375" />
+  <Ht_Higgs name="3.5Ht" frac="3.5" />
+  <Ht_Higgs name="3.625Ht" frac="3.625" />
+  <Ht_Higgs name="3.75Ht" frac="3.75" />
+  <Ht_Higgs name="3.875Ht" frac="3.875" />
+  <Ht_Higgs name="4Ht" frac="4" />
+</energies>
+
+<!-- Definitions of factorization and renormalization scales computation parts -->
+<!--
+  By default, pdf uncertainties are not calculated.
+  If the option is turned on, two editional weight (up and down) are computed.
+-->
+<scales>
+  <fac name="0.125Ht" energy="0.125Ht" />
+  <fac name="0.25Ht" energy="0.25Ht" />
+  <fac name="0.375Ht" energy="0.375Ht" />
+  <fac name="0.5Ht" energy="0.5Ht" />
+  <fac name="0.625Ht" energy="0.625Ht" />
+  <fac name="0.75Ht" energy="0.75Ht" />
+  <fac name="0.875Ht" energy="0.875Ht" />
+  <fac name="1Ht" energy="1Ht" />
+  <fac name="1.125Ht" energy="1.125Ht" />
+  <fac name="1.25Ht" energy="1.25Ht" />
+  <fac name="1.375Ht" energy="1.375Ht" />
+  <fac name="1.5Ht" energy="1.5Ht" />
+  <fac name="1.625Ht" energy="1.625Ht" />
+  <fac name="1.75Ht" energy="1.75Ht" />
+  <fac name="1.875Ht" energy="1.875Ht" />
+  <fac name="2Ht" energy="2Ht" />
+  <fac name="2.125Ht" energy="2.125Ht" />
+  <fac name="2.25Ht" energy="2.25Ht" />
+  <fac name="2.375Ht" energy="2.375Ht" />
+  <fac name="2.5Ht" energy="2.5Ht" />
+  <fac name="2.625Ht" energy="2.625Ht" />
+  <fac name="2.75Ht" energy="2.75Ht" />
+  <fac name="2.875Ht" energy="2.875Ht" />
+  <fac name="3Ht" energy="3Ht" />
+  <fac name="3.125Ht" energy="3.125Ht" />
+  <fac name="3.25Ht" energy="3.25Ht" />
+  <fac name="3.375Ht" energy="3.375Ht" />
+  <fac name="3.5Ht" energy="3.5Ht" />
+  <fac name="3.625Ht" energy="3.625Ht" />
+  <fac name="3.75Ht" energy="3.75Ht" />
+  <fac name="3.875Ht" energy="3.875Ht" />
+  <fac name="4Ht" energy="4Ht" />
+</scales>
+
+<!-- Definitions of weights -->
+<!--
+  The pdfunc has to be specified here again.
+  This way PDF uncertainty variations don't have to be written
+  for weights other then central
+-->
+<weights>
+  <weight fac="0.125Ht" ren="0.125Ht" />
+  <weight fac="0.25Ht" ren="0.25Ht" />
+  <weight fac="0.375Ht" ren="0.375Ht" />
+  <weight fac="0.5Ht" ren="0.5Ht" />
+  <weight fac="0.625Ht" ren="0.625Ht" />
+  <weight fac="0.75Ht" ren="0.75Ht" />
+  <weight fac="0.875Ht" ren="0.875Ht" />
+  <weight fac="1Ht" ren="1Ht" />
+  <weight fac="1.125Ht" ren="1.125Ht" />
+  <weight fac="1.25Ht" ren="1.25Ht" />
+  <weight fac="1.375Ht" ren="1.375Ht" />
+  <weight fac="1.5Ht" ren="1.5Ht" />
+  <weight fac="1.625Ht" ren="1.625Ht" />
+  <weight fac="1.75Ht" ren="1.75Ht" />
+  <weight fac="1.875Ht" ren="1.875Ht" />
+  <weight fac="2Ht" ren="2Ht" />
+  <weight fac="2.125Ht" ren="2.125Ht" />
+  <weight fac="2.25Ht" ren="2.25Ht" />
+  <weight fac="2.375Ht" ren="2.375Ht" />
+  <weight fac="2.5Ht" ren="2.5Ht" />
+  <weight fac="2.625Ht" ren="2.625Ht" />
+  <weight fac="2.75Ht" ren="2.75Ht" />
+  <weight fac="2.875Ht" ren="2.875Ht" />
+  <weight fac="3Ht" ren="3Ht" />
+  <weight fac="3.125Ht" ren="3.125Ht" />
+  <weight fac="3.25Ht" ren="3.25Ht" />
+  <weight fac="3.375Ht" ren="3.375Ht" />
+  <weight fac="3.5Ht" ren="3.5Ht" />
+  <weight fac="3.625Ht" ren="3.625Ht" />
+  <weight fac="3.75Ht" ren="3.75Ht" />
+  <weight fac="3.875Ht" ren="3.875Ht" />
+  <weight fac="4Ht" ren="4Ht" />
+</weights>

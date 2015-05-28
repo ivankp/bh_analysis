@@ -10,7 +10,6 @@ class TTree;
 class BHEvent {
 
   TTree *tree;
-  void Init(TTree* tree);
 
 public:
   Int_t           eid;

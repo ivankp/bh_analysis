@@ -4,20 +4,31 @@
 
 #include <TTree.h>
 
+#include <iostream>
+#define test(var) \
+  std::cout <<"\033[36m"<< #var <<"\033[0m"<< " = " << var << std::endl;
+
 inline void ActivateBranch(TTree* tree, const char* name, void* addr) noexcept {
   //TBranch *br = tree->GetBranch(name);
   tree->SetBranchAddress(name, addr);
   //br->SetStatus(true);
   tree->SetBranchStatus(name, true);
+
+  test(name)
+  test(std::hex << addr)
+  uintptr_t addr2 = reinterpret_cast<uintptr_t>(tree->GetBranch(name)->GetAddress());
+  test(std::hex << addr2)
 }
 
 void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
   this->tree = tree;
 
+  if (branches!=all) tree->SetBranchStatus("*",0);
+
   switch (branches) {
     case kinematics: {
-    
-      tree->SetBranchStatus("*",0);
+
+      test(&nparticle)
 
       ActivateBranch(tree, "id", &eid);
       ActivateBranch(tree, "nparticle", &nparticle);
@@ -33,13 +44,13 @@ void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
 
     } break;
     case reweighting: {
-    
-      tree->SetBranchStatus("*",0);
+
+      test(&nparticle)
 
       ActivateBranch(tree, "nparticle", &nparticle);
-      ActivateBranch(tree, "px", &px);
-      ActivateBranch(tree, "py", &py);
-      ActivateBranch(tree, "kf", &kf);
+      ActivateBranch(tree, "px", px);
+      ActivateBranch(tree, "py", py);
+      ActivateBranch(tree, "kf", kf);
       ActivateBranch(tree, "alphas", &alphas);
       ActivateBranch(tree, "weight2", &weight2);
       ActivateBranch(tree, "me_wgt", &me_wgt);
@@ -60,15 +71,13 @@ void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
 
     } break;
     case cross_section: {
-    
-      tree->SetBranchStatus("*",0);
 
       // ActivateBranch(tree, "nparticle", &nparticle);
       // ActivateBranch(tree, "kf", kf);
       ActivateBranch(tree, "weight", &weight);
 
     } break;
-    default: {
+    case all: {
 
       tree->SetBranchAddress("id", &eid);
       tree->SetBranchAddress("nparticle", &nparticle);
@@ -92,8 +101,10 @@ void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
       tree->SetBranchAddress("ren_scale", &ren_scale);
       tree->SetBranchAddress("nuwgt", &nuwgt);
       tree->SetBranchAddress("usr_wgts", usr_wgts);
-      tree->SetBranchAddress("alphasPower", &alphas_power);
-      tree->SetBranchAddress("part", part);
+      if (!old) {
+        tree->SetBranchAddress("alphasPower", &alphas_power);
+        tree->SetBranchAddress("part", part);
+      }
 
     }
   }
