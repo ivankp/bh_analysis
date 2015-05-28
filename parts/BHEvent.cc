@@ -4,20 +4,9 @@
 
 #include <TTree.h>
 
-#include <iostream>
-#define test(var) \
-  std::cout <<"\033[36m"<< #var <<"\033[0m"<< " = " << var << std::endl;
-
 inline void ActivateBranch(TTree* tree, const char* name, void* addr) noexcept {
-  //TBranch *br = tree->GetBranch(name);
+  tree->SetBranchStatus (name, true);
   tree->SetBranchAddress(name, addr);
-  //br->SetStatus(true);
-  tree->SetBranchStatus(name, true);
-
-  test(name)
-  test(std::hex << addr)
-  uintptr_t addr2 = reinterpret_cast<uintptr_t>(tree->GetBranch(name)->GetAddress());
-  test(std::hex << addr2)
 }
 
 void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
@@ -28,8 +17,6 @@ void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
   switch (branches) {
     case kinematics: {
 
-      test(&nparticle)
-
       ActivateBranch(tree, "id", &eid);
       ActivateBranch(tree, "nparticle", &nparticle);
       ActivateBranch(tree, "px", px);
@@ -37,15 +24,12 @@ void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
       ActivateBranch(tree, "pz", pz);
       ActivateBranch(tree, "E" , E );
       ActivateBranch(tree, "kf", kf);
-
       if (!old) { // for treating RS uncertainties properly
         ActivateBranch(tree, "part", part);
       }
 
     } break;
     case reweighting: {
-
-      test(&nparticle)
 
       ActivateBranch(tree, "nparticle", &nparticle);
       ActivateBranch(tree, "px", px);
@@ -72,8 +56,6 @@ void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
     } break;
     case cross_section: {
 
-      // ActivateBranch(tree, "nparticle", &nparticle);
-      // ActivateBranch(tree, "kf", kf);
       ActivateBranch(tree, "weight", &weight);
 
     } break;

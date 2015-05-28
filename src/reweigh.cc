@@ -121,7 +121,7 @@ int main(int argc, char** argv)
   } else num_ent.second = tin->GetEntries();
 
   // Set up BlackHat event
-  event.SetTree(tin, BHEvent::all, old_bh);
+  event.SetTree(tin, BHEvent::reweighting, old_bh);
 
   if (old_bh) {
 
@@ -296,26 +296,9 @@ int main(int argc, char** argv)
   cout << scientific;
   cout.precision(10);
 
-  auto *brs = tin->GetListOfBranches();
-  for (Int_t i=0; i<brs->GetEntries(); ++i) {
-    auto *br = static_cast<TBranch*>(brs->At(i));
-    cout << br->GetName() << ' ' << tin->GetBranchStatus(br->GetName()) << endl;
-    br->GetEntry(0);
-    uintptr_t addr = reinterpret_cast<uintptr_t>(br->GetAddress());
-    test(hex << addr)
-  }
-
-  test(&event.nparticle)
-  test(event.nparticle)
-
   for (Long64_t ent=num_ent.first; ent<num_ent.second; ++ent) {
     counter(ent);
     tin->GetEntry(ent);
-    test(ent)
-
-    test(event.kf[0])
-    test(event.me_wgt2)
-    test(event.weight2)
 
     // use event id for entry number
     event.eid = ent;
