@@ -208,8 +208,8 @@ int main(int argc, char** argv)
   }
 
   // Reading entries from the input TChain **************************
-  Long64_t num_entries = 0, num_events = 0;
-  Int_t prev_id = -1;
+  Long64_t num_selected = 0, num_events = 1;
+  Int_t prev_id = 0;
   cout << "Reading " << ents.len << " entries";
   if (ents.first>0) cout << " starting at " << ents.first;
   cout << endl;
@@ -228,6 +228,17 @@ int main(int argc, char** argv)
            << BHMAXNP << "\033[0m\n"
            << "Increase array length to " << event.nparticle << endl;
       break;
+    }
+
+    // Count number of events (not entries)
+    if (prev_id!=event.eid) {
+      prev_id = event.eid;
+      ++num_events;
+
+      for (size_t i=0; i<nw; ++i) {
+        cross_section[i].second += cross_section[i].first;
+        cross_section[i].first = 0.;
+      }
     }
 
     // Find Higgs or AA
@@ -318,25 +329,23 @@ int main(int argc, char** argv)
     // ****************************************************
 
     if (wt_given) wt_tree->GetEntry(ent);
-
-    // Count number of events (not entries)
-    ++num_entries;
-    if (prev_id!=event.eid) {
-      prev_id = event.eid;
-      ++num_events;
-
-      if (prev_id>0) for (size_t i=0; i<nw; ++i) {
-        cross_section[i].second += cross_section[i].first;
-        cross_section[i].first = 0.;
-      }
-    }
+    ++num_selected;
 
     for (size_t i=0; i<nw; ++i) {
       cross_section[i].first += weight::all[i]->get();
     }
 
   } // END of event loop ********************************************
-  ++num_events;
+
+  counter.prt(ents.end());
+  cout << endl;
+  cout << "Selected entries: " << num_selected << endl;
+  cout << "Processed events: " << num_events << endl;
+  cout << endl;
+
+  // Close files
+  delete bh_tree;
+  delete wt_tree;
 
   for (size_t i=0; i<nw; ++i) {
     // add last event
@@ -348,15 +357,6 @@ int main(int argc, char** argv)
     cout << weight::all[i]->name << ": "
          << cross_section[i].second << " pb" << endl;
   }
-
-  counter.prt(ents.end());
-  cout << endl;
-  cout << "Selected entries: " << num_entries << endl;
-  cout << "Selected events : " << num_events  << endl;
-
-  // Close files
-  delete bh_tree;
-  delete wt_tree;
 
   return 0;
 }
