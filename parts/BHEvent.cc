@@ -56,7 +56,8 @@ void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
     } break;
     case cross_section: {
 
-      ActivateBranch(tree, "weight", &weight);
+      ActivateBranch(tree, "id", &eid);
+      ActivateBranch(tree, "weight2", &weight2);
 
     } break;
     case all: {
