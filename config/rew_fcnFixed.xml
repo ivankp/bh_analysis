@@ -1,0 +1,120 @@
+<!-- Input BlackHat ntuple properties -->
+<!--
+  alphas="" or omitted: all powers of \alpha_{s} at the same chosen scale
+  alphas="two_mH": two powers of \alpha_{s} at mass of Higgs, the rest at a chosen scale
+-->
+<bh_format alphas="" />
+
+<!-- Definitions of energies of the scales -->
+<!--
+  Ht = \sum_i^{all} p_{T,i}
+    Example: <Ht name="Ht2" frac="0.5" />
+  fixed = \sqrt{m_H^2 + p_{T,H}^2} + \sum_i^{partons} p_{T,i}
+    Example: <Ht_Higgs name="Ht2" frac="0.5" />
+  fixed = energy in GeV
+    Example: <fixed name="mH" val="125" />
+  fac_default = original ntuple factorization scale
+    Example: <fac_default name="fac_def" />
+  ren_default = original ntuple renormalization scale
+    Example: <ren_default name="ren_def" />
+-->
+<energies>
+  <fixed name="10GeV" val="10" />
+  <fixed name="20GeV" val="20" />
+  <fixed name="30GeV" val="30" />
+  <fixed name="40GeV" val="40" />
+  <fixed name="50GeV" val="50" />
+  <fixed name="60GeV" val="60" />
+  <fixed name="70GeV" val="70" />
+  <fixed name="80GeV" val="80" />
+  <fixed name="90GeV" val="90" />
+  <fixed name="100GeV" val="100" />
+  <fixed name="110GeV" val="110" />
+  <fixed name="120GeV" val="120" />
+  <fixed name="130GeV" val="130" />
+  <fixed name="140GeV" val="140" />
+  <fixed name="150GeV" val="150" />
+  <fixed name="160GeV" val="160" />
+  <fixed name="170GeV" val="170" />
+  <fixed name="180GeV" val="180" />
+  <fixed name="190GeV" val="190" />
+  <fixed name="200GeV" val="200" />
+</energies>
+
+<!-- Definitions of factorization and renormalization scales computation parts -->
+<!--
+  By default, pdf uncertainties are not calculated.
+  If the option is turned on, two editional weight (up and down) are computed.
+-->
+<scales>
+  <fac name="10GeV" energy="10GeV" />
+  <fac name="20GeV" energy="20GeV" />
+  <fac name="30GeV" energy="30GeV" />
+  <fac name="40GeV" energy="40GeV" />
+  <fac name="50GeV" energy="50GeV" />
+  <fac name="60GeV" energy="60GeV" />
+  <fac name="70GeV" energy="70GeV" />
+  <fac name="80GeV" energy="80GeV" />
+  <fac name="90GeV" energy="90GeV" />
+  <fac name="100GeV" energy="100GeV" />
+  <fac name="110GeV" energy="110GeV" />
+  <fac name="120GeV" energy="120GeV" />
+  <fac name="130GeV" energy="130GeV" />
+  <fac name="140GeV" energy="140GeV" />
+  <fac name="150GeV" energy="150GeV" />
+  <fac name="160GeV" energy="160GeV" />
+  <fac name="170GeV" energy="170GeV" />
+  <fac name="180GeV" energy="180GeV" />
+  <fac name="190GeV" energy="190GeV" />
+  <fac name="200GeV" energy="200GeV" />
+
+  <ren name="10GeV" energy="10GeV" />
+  <ren name="20GeV" energy="20GeV" />
+  <ren name="30GeV" energy="30GeV" />
+  <ren name="40GeV" energy="40GeV" />
+  <ren name="50GeV" energy="50GeV" />
+  <ren name="60GeV" energy="60GeV" />
+  <ren name="70GeV" energy="70GeV" />
+  <ren name="80GeV" energy="80GeV" />
+  <ren name="90GeV" energy="90GeV" />
+  <ren name="100GeV" energy="100GeV" />
+  <ren name="110GeV" energy="110GeV" />
+  <ren name="120GeV" energy="120GeV" />
+  <ren name="130GeV" energy="130GeV" />
+  <ren name="140GeV" energy="140GeV" />
+  <ren name="150GeV" energy="150GeV" />
+  <ren name="160GeV" energy="160GeV" />
+  <ren name="170GeV" energy="170GeV" />
+  <ren name="180GeV" energy="180GeV" />
+  <ren name="190GeV" energy="190GeV" />
+  <ren name="200GeV" energy="200GeV" />
+</scales>
+
+<!-- Definitions of weights -->
+<!--
+  The pdfunc has to be specified here again.
+  This way PDF uncertainty variations don't have to be written
+  for weights other then central
+-->
+<weights>
+  <weight fac="10GeV" ren="10GeV" />
+  <weight fac="20GeV" ren="20GeV" />
+  <weight fac="30GeV" ren="30GeV" />
+  <weight fac="40GeV" ren="40GeV" />
+  <weight fac="50GeV" ren="50GeV" />
+  <weight fac="60GeV" ren="60GeV" />
+  <weight fac="70GeV" ren="70GeV" />
+  <weight fac="80GeV" ren="80GeV" />
+  <weight fac="90GeV" ren="90GeV" />
+  <weight fac="100GeV" ren="100GeV" />
+  <weight fac="110GeV" ren="110GeV" />
+  <weight fac="120GeV" ren="120GeV" />
+  <weight fac="130GeV" ren="130GeV" />
+  <weight fac="140GeV" ren="140GeV" />
+  <weight fac="150GeV" ren="150GeV" />
+  <weight fac="160GeV" ren="160GeV" />
+  <weight fac="170GeV" ren="170GeV" />
+  <weight fac="180GeV" ren="180GeV" />
+  <weight fac="190GeV" ren="190GeV" />
+  <weight fac="200GeV" ren="200GeV" />
+</weights>

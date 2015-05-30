@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <tuple>
 
 #include <boost/program_options.hpp>
 
@@ -22,6 +23,8 @@
 
 #define test(var) \
   cout <<"\033[36m"<< #var <<"\033[0m"<< " = " << var << endl;
+
+template<typename T> inline T sq(T x) noexcept { return x*x; }
 
 using namespace std;
 namespace po = boost::program_options;
@@ -208,7 +211,7 @@ int main(int argc, char** argv)
   }
 
   // Reading entries from the input TChain **************************
-  Long64_t num_selected = 0, num_events = 1;
+  Long64_t num_selected = 0, num_events = 0;
   Int_t prev_id = 0;
   cout << "Reading " << ents.len << " entries";
   if (ents.first>0) cout << " starting at " << ents.first;
@@ -216,7 +219,7 @@ int main(int argc, char** argv)
   timed_counter counter(counter_newline);
 
   const size_t nw = weight::all.size();
-  vector<pair<Double_t,Double_t>> cross_section(nw,{0.,0.});
+  vector<tuple<Double_t,Double_t,Double_t>> cross_section(nw,make_tuple(0.,0.,0.));
 
   // LOOP ***********************************************************
   for (Long64_t ent = ents.first, ent_end = ents.end(); ent < ent_end; ++ent) {
@@ -236,8 +239,9 @@ int main(int argc, char** argv)
       ++num_events;
 
       for (size_t i=0; i<nw; ++i) {
-        cross_section[i].second += cross_section[i].first;
-        cross_section[i].first = 0.;
+        get<1>(cross_section[i]) +=     get<0>(cross_section[i])  ;
+        get<2>(cross_section[i]) += sq( get<0>(cross_section[i]) );
+        get<0>(cross_section[i]) = 0.;
       }
     }
 
@@ -332,7 +336,7 @@ int main(int argc, char** argv)
     ++num_selected;
 
     for (size_t i=0; i<nw; ++i) {
-      cross_section[i].first += weight::all[i]->get();
+      get<0>(cross_section[i]) += weight::all[i]->get();
     }
 
   } // END of event loop ********************************************
@@ -347,15 +351,26 @@ int main(int argc, char** argv)
   delete bh_tree;
   delete wt_tree;
 
+  cout << fixed << setprecision(8);
+
+  size_t max_name_len = 0;
+  for (auto& w : weight::all) {
+    const size_t len = w->name.size();
+    if (len > max_name_len) max_name_len = len;
+  }
+
   for (size_t i=0; i<nw; ++i) {
     // add last event
-    cross_section[i].second += cross_section[i].first;
+    get<1>(cross_section[i]) +=     get<0>(cross_section[i])  ;
+    get<2>(cross_section[i]) += sq( get<0>(cross_section[i]) );
 
-    // convert to cross section
-    cross_section[i].second /= num_events;
-
-    cout << weight::all[i]->name << ": "
-         << cross_section[i].second << " pb" << endl;
+    cout << left << setw(max_name_len) << weight::all[i]->name << ": "
+         << right
+         << setw(11) << get<1>(cross_section[i])/num_events << " ± "
+         << setw(11) << sqrt(
+             get<2>(cross_section[i]) -
+             sq( get<1>(cross_section[i]) )/num_events
+            )/(num_events-1) << " pb" << endl;
   }
 
   return 0;
