@@ -406,7 +406,7 @@ int main(int argc, char** argv)
   h_jj(H_jjpT_dphi) h_jj_excl(H_jjpT_dphi)
   h_jj(H_jjfb_dphi) h_jj_excl(H_jjfb_dphi)
 
-  h_jj(H_jj_phi2)
+  h_jj(H_jjfb_phi2)
   h_jj(HjjpT_mass) h_jj(Hjjfb_mass);
 
   h_jj(jjpT_N_jhj_incl) h_jj(jjfb_N_jhj_incl)
@@ -805,7 +805,7 @@ int main(int argc, char** argv)
         phi2 = fphi2(jets[jb].p,vsumf);
       }
   
-      h_H_jj_phi2.Fill(phi2);
+      h_H_jjfb_phi2.Fill(phi2);
 
     } // END if (njets>1)
 
