@@ -241,9 +241,10 @@ int main(int argc, char **argv)
     TAxis *ya = first->GetYaxis();
     ya->SetTitleOffset(1.3);
 
-    if (h_name.find("_pT") != string::npos) {
+    if ( (h_name.find("_pT") != string::npos) ||
+         (h_name.find("_pt") != string::npos) ) {
       xa->SetTitle("pT, GeV");
-      ya->SetTitle("d#sigma/dp_{T}, pb/GeV");
+      ya->SetTitle("d#sigma/dpT, pb/GeV");
     } else if (h_name.find("_mass") != string::npos) {
       xa->SetTitle("m, GeV");
       ya->SetTitle("d#sigma/dm, pb/GeV");
@@ -252,18 +253,23 @@ int main(int argc, char **argv)
                 (h_name.find("_deltay") != string::npos) ) {
       xa->SetTitle("y");
       ya->SetTitle("d#sigma/dy, pb");
+    } else if ( (h_name.find("_eta") != string::npos) ||
+                (h_name.find("_deta") != string::npos) ||
+                (h_name.find("_deltaeta") != string::npos) ) {
+      xa->SetTitle("#eta");
+      ya->SetTitle("d#sigma/d#eta, pb");
     } else if ( (h_name.find("_phi") != string::npos) ||
                 (h_name.find("_dphi") != string::npos) ||
                 (h_name.find("_deltaphi") != string::npos) ) {
       xa->SetTitle("#phi, rad");
       ya->SetTitle("d#sigma/d#phi, pb/rad");
     } else if (h_name.find("_HT") != string::npos) {
-      xa->SetTitle("H_{T}, GeV");
-      ya->SetTitle("d#sigma/dH_{T}, pb/GeV");
+      xa->SetTitle("HT, GeV");
+      ya->SetTitle("d#sigma/dHT, pb/GeV");
     } else if (h_name.find("_tau") != string::npos) {
       xa->SetTitle("#tau, GeV");
       ya->SetTitle("d#sigma/d#tau, pb/GeV");
-    } else ya->SetTitle("#sigma, pb");
+    } else ya->SetTitle("d#sigma, pb");
 
     top_corner_cover.Draw();
     right_corner_cover.Draw();
