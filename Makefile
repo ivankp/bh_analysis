@@ -69,15 +69,15 @@ bin/reweigh: bin/%: lib/%.o
 
 bin/hist_weights: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m"
-	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(ROOT_LIBS) -lboost_regex
+	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(ROOT_LIBS)
 
 bin/plot: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m"
-	@$(CPP) $(filter %.o,$^) -o $@ $(ROOT_LIBS) -lboost_program_options -lboost_regex
+	@$(CPP) $(filter %.o,$^) -o $@ $(ROOT_LIBS) -lboost_program_options
 
 bin/overlay: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m"
-	@$(CPP) $(filter %.o,$^) -o $@ $(ROOT_LIBS)
+	@$(CPP) $(filter %.o,$^) -o $@ $(ROOT_LIBS) -lboost_program_options -lboost_regex
 
 bin/cross_section: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m"
@@ -85,7 +85,7 @@ bin/cross_section: bin/%: lib/%.o
 
 $(HIST_EXE): bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m"
-	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(ROOT_LIBS) $(FJ_LIBS) -lboost_program_options -lboost_regex
+	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(ROOT_LIBS) $(FJ_LIBS) -lboost_program_options
 
 # Objects' dependencies #############################################
 lib/hist_wt.o: parts/weight.hh
@@ -96,7 +96,7 @@ lib/reweigh.o: tools/timed_counter.hh parts/rew_calc.hh parts/BHEvent.hh
 
 lib/hist_weights.o: tools/csshists.hh
 
-lib/overlay.o: tools/propmap.hh tools/hist_range.hh
+lib/overlay.o: tools/hist_range.hh
 
 lib/cross_section_bh.o: parts/BHEvent.hh
 
