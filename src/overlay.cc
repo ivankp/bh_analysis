@@ -36,12 +36,16 @@ cout <<"\033[36m"<< #var <<"\033[0m"<< " = " << var << endl;
 
 namespace std {
   template<typename A, typename B>
-  istream& operator>>(istream &is, pair<A,B> &p) {
+  istream& operator>>(istream& is, pair<A,B>& p) {
+    /*
     stringstream a, b;
     bool first = true;
     char c;
     while (is >> c) {
-      if (c==':') first = false;
+      if (first && c==':') {
+        first = false;
+        continue;
+      }
       (first ? a : b) << c;
     }
     if (first) {
@@ -49,7 +53,20 @@ namespace std {
     } else {
       a >> p.first;
       b >> p.second;
+      cout << p.first << "  " << p.second << endl;
     }
+    */
+
+    string str;
+    is >> str;
+    const size_t sep = str.find(':');
+    if (sep==string::npos || sep==0 || sep==str.size()-1) {
+      is.setstate(ios::failbit);
+    } else {
+      stringstream(str.substr(0,sep)) >> p.first;
+      stringstream(str.substr(sep+1)) >> p.second;
+    }
+
     return is;
   }
 }
@@ -65,17 +82,19 @@ inline T* get(TDirectory* dir, const char* name) {
   }
 }
 
-unsigned ngroups = 0; // 0 don't sort, 1 sort
+unsigned ngroups = 1; // 0 don't sort, 1 sort
 unsigned group_by = 0;
 map<unsigned,boost::regex> rex;
+using tokenizer = boost::tokenizer<boost::char_separator<char>>;
+map<unsigned,boost::char_separator<char>> tok;
 using group_map_t = unordered_map<
   string, pair<unsigned,vector<pair<TH1D*,vector<string>>>>
 >;
 group_map_t groups;
 
-void read_hists(TDirectory* dir, vector<string>* dir_names = new vector<string>()) {
-  dir_names->emplace_back(dir->GetName());
-  const size_t nd = dir_names->size();
+void read_hists(TDirectory* dir, vector<string>& dir_names) {
+  dir_names.emplace_back(dir->GetName());
+  const size_t nd = dir_names.size();
 
   TIter nextkey(dir->GetListOfKeys());
   TKey *key;
@@ -86,16 +105,21 @@ void read_hists(TDirectory* dir, vector<string>* dir_names = new vector<string>(
       TH1D *h = static_cast<TH1D*>(obj);
 
       vector<string> props;
-      if (rex.count(0)) {
-        // process regex
-      } else {
-        props.emplace_back(h->GetName());
-      }
-      for (size_t i=0; i<nd; ++i) {
-        if (rex.count(i+1)) {
-          // process regex
+      for (size_t i=0; i<=nd; ++i) {
+        auto name = [&]() {
+          return (i ? dir_names[i-1] : h->GetName());
+        };
+
+        if (rex.count(i)) {
+          boost::smatch result;
+          if ( boost::regex_search(name(), result, rex[i]) )
+            for (auto &r : result) props.emplace_back(r.first, r.second);
+          else continue;
+        } else if (tok.count(i)) {
+          for (auto &t : tokenizer(name(), tok[i]))
+            props.emplace_back(t);
         } else {
-          props.emplace_back((*dir_names)[i]);
+          props.emplace_back(name());
         }
       }
 
@@ -112,7 +136,12 @@ void read_hists(TDirectory* dir, vector<string>* dir_names = new vector<string>(
       read_hists(static_cast<TDirectory*>(obj), dir_names);
     }
   }
-  dir_names->erase(dir_names->begin()+nd-1,dir_names->end());
+  dir_names.erase(dir_names.begin()+nd-1,dir_names.end());
+}
+
+inline void read_hists(TDirectory* dir) {
+  vector<string> dir_names;
+  read_hists(dir,dir_names);
 }
 
 unsigned sigma_prec;
@@ -131,10 +160,12 @@ int main(int argc, char **argv)
   // START OPTIONS **************************************************
   vector<string> fin_name;
   string fout_name;
-  bool sort_groups;
+  bool noN;
 
   try {
+    bool sort_groups;
     vector<pair<unsigned,string>> rex_str;
+    vector<pair<unsigned,string>> tok_str;
 
     // General Options ------------------------------------
     po::options_description all_opt("Options");
@@ -144,10 +175,14 @@ int main(int argc, char **argv)
      "*input files with histograms")
     ("output,o", po::value<string>(&fout_name),
      "output pdf plots")
+    ("tokenize,t", po::value<vector<pair<unsigned,string>>>(&tok_str),
+     "split name into parts")
     ("regex,r", po::value<vector<pair<unsigned,string>>>(&rex_str),
      "regular expressions")
     ("sort,s", po::bool_switch(&sort_groups),
      "alphabetically sort order of groups")
+    ("no-N", po::bool_switch(&noN),
+     "no N histogram")
     ("sigma-prec", po::value<unsigned>(&sigma_prec)->default_value(3),
      "number of significant digits in cross section")
     ;
@@ -175,7 +210,9 @@ int main(int argc, char **argv)
     }
     // for (const auto& x : rex_str) rex.emplace(x);
     for (const auto& x : rex_str) rex.emplace(x.first, boost::regex(x.second));
-    if (sort_groups) ngroups = 1;
+    for (const auto& x : tok_str)
+      tok.emplace(x.first, boost::char_separator<char>(x.second.c_str()));
+    if (sort_groups) ngroups = 0;
   }
   catch(exception& e) {
     cerr << "\033[31mError: " <<  e.what() <<"\033[0m"<< endl;
@@ -191,7 +228,7 @@ int main(int argc, char **argv)
     fin.emplace_back(f,0);
   }
   for (auto& f : fin) {
-    f.second = get<TH1D>(f.first,"N")->GetAt(1);
+    if (!noN) f.second = get<TH1D>(f.first,"N")->GetAt(1);
     read_hists(f.first);
   }
 
@@ -200,16 +237,16 @@ int main(int argc, char **argv)
   for (auto it=groups.begin(), end=groups.end(); it!=end; ++it) {
     order.push_back(it);
   }
-  if (sort_groups) {
+  if (ngroups) {
     sort(order.begin(), order.end(),
       [](group_map_t::iterator a, group_map_t::iterator b) {
-        return (a->first < b->first);
+        return (a->second.first < b->second.first);
       }
     );
   } else {
     sort(order.begin(), order.end(),
       [](group_map_t::iterator a, group_map_t::iterator b) {
-        return (a->second.first < b->second.first);
+        return (a->first < b->first);
       }
     );
   }
