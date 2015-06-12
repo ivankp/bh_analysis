@@ -7,6 +7,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <set>
 #include <unordered_map>
 #include <algorithm>
 #include <tuple>
@@ -86,10 +87,9 @@ inline T* get(TDirectory* dir, const char* name) {
 
 class splicer {
   vector<function<void(string&, const vector<string>* props)>> parts;
-  // mutable const vector<string>* props;
 
-  void init(string str) {
-    // test(str)
+public:
+  void operator()(string& str) { // consumes the input string
     size_t sep, i;
     while ((sep = str.find('\\'))!=string::npos) {
       const string sub = str.substr(0,sep);
@@ -99,15 +99,12 @@ class splicer {
         });
       str.erase(0,sep+1);
 
-      // test(str)
       int id;
       try { id = std::stoi(str,&i); }
       catch (...) {
         throw runtime_error("--group: \\ not followed by a number");
       }
-      // test(id)
       parts.emplace_back([id](string& s, const vector<string>* props){
-        // test(props->size())
         s += props->at(id < 0 ? props->size()+id : id );
       });
       str.erase(0,i);
@@ -117,20 +114,10 @@ class splicer {
         s += str;
       });
   }
-public:
   string operator()(const vector<string>* props) const {
-    // this->props = props;
     string str;
     for (auto &f : parts) f(str,props);
     return str;
-  }
-  splicer() { }
-  splicer(const string& str) { init(str); }
-  friend istream& operator>>(istream& is, splicer& sp) {
-    string str;
-    is >> str;
-    sp.init(str);
-    return is;
   }
 };
 
@@ -140,7 +127,6 @@ splicer group_name;
 map<unsigned,boost::regex> rex;
 using tokenizer = boost::tokenizer<boost::char_separator<char>>;
 map<unsigned,boost::char_separator<char>> tok;
-vector<unsigned> append_to_group;
 using group_map_t = unordered_map<
   string, pair<unsigned,vector<pair<TH1D*,vector<string>>>>
 >;
@@ -232,6 +218,7 @@ int main(int argc, char **argv)
     vector<pair<unsigned,string>> rex_str;
     vector<pair<unsigned,string>> tok_str;
     // vector<pair<unsigned,string>> ign_str;
+    string group_str;
 
     // General Options ------------------------------------
     po::options_description all_opt("Options");
@@ -241,17 +228,13 @@ int main(int argc, char **argv)
      "*input files with histograms")
     ("output,o", po::value<string>(&fout_name),
      "output pdf plots")
-    ("group,g", po::value<splicer>(&group_name)->default_value(splicer("\\0"),"\\0"),
+    ("group,g", po::value<string>(&group_str)->default_value("\\0"),
      "group by propery\n"
      "\\0: hist, \\1: file, \\2-: dir")
-    ("append,a", po::value<vector<unsigned>>(&append_to_group),
-     "append to group label")
     ("tokenize,t", po::value<vector<pair<unsigned,string>>>(&tok_str),
      "(i:delim) split name")
     ("regex,r", po::value<vector<pair<unsigned,string>>>(&rex_str),
      "(i:regex) apply regular expression to name")
-    // ("ignore,n", po::value<vector<pair<unsigned,string>>>(&ign_str),
-    //  "(i:regex) ignore matching name")
     ("sort,s", po::bool_switch(&sort_groups),
      "alphabetically sort order of groups")
     ("no-N", po::bool_switch(&noN),
@@ -286,6 +269,7 @@ int main(int argc, char **argv)
     for (const auto& x : tok_str)
       tok.emplace(x.first, boost::char_separator<char>(x.second.c_str()));
     if (sort_groups) ngroups = 0;
+    group_name(group_str);
   }
   catch(exception& e) {
     cerr << "\033[31mError: " <<  e.what() <<"\033[0m"<< endl;
@@ -324,16 +308,21 @@ int main(int argc, char **argv)
     );
   }
 
+  vector<set<string>> uniq;
   for (auto &it : order) {
     cout << it->first << ' ' << it->second.second.size() << endl;
-    /*for (auto &s : it->second.second) {
-      for (auto &v : s.second)
-        cout << "    " << v << endl;
-      cout << endl;
-    }*/
+    for (auto &s : it->second.second) {
+      for (size_t i=0, n=s.second.size(); i<n; ++i) {
+        if (uniq.size() < n) uniq.resize(n);
+        uniq[i].insert(s.second[i]);
+      }
+    }
   }
 
-  for (auto &f : fin) delete f.first;
+  for (size_t i=0, n=uniq.size(); i<n; ++i)
+    for (auto &x : uniq[i])
+      cout << i << ": " << x << endl;
 
+  for (auto &f : fin) delete f.first;
   return 0;
 }
