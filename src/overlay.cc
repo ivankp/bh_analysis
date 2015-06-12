@@ -111,10 +111,14 @@ void read_hists(TDirectory* dir, vector<string>& dir_names) {
         };
 
         if (rex.count(i)) {
-          boost::smatch result;
-          if ( boost::regex_search(name(), result, rex[i]) )
-            for (auto &r : result) props.emplace_back(r.first, r.second);
-          else continue;
+          // boost::smatch result;
+          // if ( boost::regex_search(name(), result, rex[i]) )
+          //   for (auto &r : result) props.emplace_back(r.first, r.second);
+          // else continue;
+          const string &s = name();
+          boost::sregex_token_iterator it1(s.begin(), s.end(), rex[i], -1);
+          static const boost::sregex_token_iterator end;
+          while (it1 != end) props.emplace_back(*it1++);
         } else if (tok.count(i)) {
           for (auto &t : tokenizer(name(), tok[i]))
             props.emplace_back(t);
@@ -175,10 +179,15 @@ int main(int argc, char **argv)
      "*input files with histograms")
     ("output,o", po::value<string>(&fout_name),
      "output pdf plots")
+    ("group,g", po::value<unsigned>(&group_by)->default_value(0),
+     "group by propery\n"
+     "0: hist, 1: file, 2-: dir")
     ("tokenize,t", po::value<vector<pair<unsigned,string>>>(&tok_str),
-     "split name into parts")
+     "(i:delim) split name")
     ("regex,r", po::value<vector<pair<unsigned,string>>>(&rex_str),
-     "regular expressions")
+     "(i:regex) apply regular expression to name")
+    ("ignore,n", po::value<vector<pair<unsigned,string>>>(&rex_str),
+     "(i:regex) ignore matching name")
     ("sort,s", po::bool_switch(&sort_groups),
      "alphabetically sort order of groups")
     ("no-N", po::bool_switch(&noN),
