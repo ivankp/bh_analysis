@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include <cstring>
+#include <cctype>
 #include <vector>
 #include <list>
 #include <map>
@@ -10,6 +11,7 @@
 #include <algorithm>
 #include <tuple>
 #include <memory>
+#include <functional>
 
 #include <boost/program_options.hpp>
 #include <boost/tokenizer.hpp>
@@ -82,11 +84,63 @@ inline T* get(TDirectory* dir, const char* name) {
   }
 }
 
+class splicer {
+  vector<function<void(string&, const vector<string>* props)>> parts;
+  // mutable const vector<string>* props;
+
+  void init(string str) {
+    // test(str)
+    size_t sep, i;
+    while ((sep = str.find('\\'))!=string::npos) {
+      const string sub = str.substr(0,sep);
+      if (sub.size())
+        parts.emplace_back([sub](string& s, const vector<string>* props){
+          s += sub;
+        });
+      str.erase(0,sep+1);
+
+      // test(str)
+      int id;
+      try { id = std::stoi(str,&i); }
+      catch (...) {
+        throw runtime_error("--group: \\ not followed by a number");
+      }
+      // test(id)
+      parts.emplace_back([id](string& s, const vector<string>* props){
+        // test(props->size())
+        s += props->at(id < 0 ? props->size()+id : id );
+      });
+      str.erase(0,i);
+    }
+    if (str.size())
+      parts.emplace_back([str](string& s, const vector<string>* props){
+        s += str;
+      });
+  }
+public:
+  string operator()(const vector<string>* props) const {
+    // this->props = props;
+    string str;
+    for (auto &f : parts) f(str,props);
+    return str;
+  }
+  splicer() { }
+  splicer(const string& str) { init(str); }
+  friend istream& operator>>(istream& is, splicer& sp) {
+    string str;
+    is >> str;
+    sp.init(str);
+    return is;
+  }
+};
+
+bool noN;
 unsigned ngroups = 1; // 0 don't sort, 1 sort
-unsigned group_by = 0;
+splicer group_name;
 map<unsigned,boost::regex> rex;
 using tokenizer = boost::tokenizer<boost::char_separator<char>>;
 map<unsigned,boost::char_separator<char>> tok;
+vector<unsigned> append_to_group;
 using group_map_t = unordered_map<
   string, pair<unsigned,vector<pair<TH1D*,vector<string>>>>
 >;
@@ -104,6 +158,11 @@ void read_hists(TDirectory* dir, vector<string>& dir_names) {
 
       TH1D *h = static_cast<TH1D*>(obj);
 
+      if (!noN) // Skip the N histogram
+        if (dir->InheritsFrom(TFile::Class()) && !strcmp(h->GetName(),"N"))
+          continue;
+
+      // Parse names into properties ----------------------
       vector<string> props;
       for (size_t i=0; i<=nd; ++i) {
         auto name = [&]() {
@@ -127,15 +186,18 @@ void read_hists(TDirectory* dir, vector<string>& dir_names) {
         }
       }
 
-      if (props.size() <= group_by)
-        throw runtime_error("not enough properties");
-      string group_prop = props[group_by];
-      props.erase(props.begin()+group_by);
+      // Add to the map -----------------------------------
+      // if (props.size() <= group_by)
+      //   throw runtime_error("not enough properties");
+      // string group_prop = props[group_by];
+      // props.erase(props.begin()+group_by);
+      string group_prop = group_name(&props);
       const bool exists = groups.count(group_prop);
       auto &g = groups[group_prop];
       g.second.emplace_back(h,move(props));
       if (!exists) g.first = (ngroups ? ++ngroups : 0);
 
+    // Go into the next level of directories --------------
     } else if (obj->InheritsFrom(TDirectory::Class())) {
       read_hists(static_cast<TDirectory*>(obj), dir_names);
     }
@@ -164,12 +226,12 @@ int main(int argc, char **argv)
   // START OPTIONS **************************************************
   vector<string> fin_name;
   string fout_name;
-  bool noN;
 
   try {
     bool sort_groups;
     vector<pair<unsigned,string>> rex_str;
     vector<pair<unsigned,string>> tok_str;
+    // vector<pair<unsigned,string>> ign_str;
 
     // General Options ------------------------------------
     po::options_description all_opt("Options");
@@ -179,15 +241,17 @@ int main(int argc, char **argv)
      "*input files with histograms")
     ("output,o", po::value<string>(&fout_name),
      "output pdf plots")
-    ("group,g", po::value<unsigned>(&group_by)->default_value(0),
+    ("group,g", po::value<splicer>(&group_name)->default_value(splicer("\\0"),"\\0"),
      "group by propery\n"
-     "0: hist, 1: file, 2-: dir")
+     "\\0: hist, \\1: file, \\2-: dir")
+    ("append,a", po::value<vector<unsigned>>(&append_to_group),
+     "append to group label")
     ("tokenize,t", po::value<vector<pair<unsigned,string>>>(&tok_str),
      "(i:delim) split name")
     ("regex,r", po::value<vector<pair<unsigned,string>>>(&rex_str),
      "(i:regex) apply regular expression to name")
-    ("ignore,n", po::value<vector<pair<unsigned,string>>>(&rex_str),
-     "(i:regex) ignore matching name")
+    // ("ignore,n", po::value<vector<pair<unsigned,string>>>(&ign_str),
+    //  "(i:regex) ignore matching name")
     ("sort,s", po::bool_switch(&sort_groups),
      "alphabetically sort order of groups")
     ("no-N", po::bool_switch(&noN),
@@ -262,11 +326,11 @@ int main(int argc, char **argv)
 
   for (auto &it : order) {
     cout << it->first << ' ' << it->second.second.size() << endl;
-    for (auto &s : it->second.second) {
+    /*for (auto &s : it->second.second) {
       for (auto &v : s.second)
         cout << "    " << v << endl;
       cout << endl;
-    }
+    }*/
   }
 
   for (auto &f : fin) delete f.first;

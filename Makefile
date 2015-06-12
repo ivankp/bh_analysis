@@ -3,7 +3,7 @@ CPP := g++
 
 DIRS := lib bin
 
-CFLAGS := -std=c++11 -Wall -O3 -Itools -Iparts
+CFLAGS := -std=c++11 -Wall -g -Itools -Iparts
 
 FJ_DIR    := $(shell fastjet-config --prefix)
 FJ_CFLAGS := -I$(FJ_DIR)/include
