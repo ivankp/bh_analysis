@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <cstdlib>
 #include <cstring>
 #include <cctype>
 #include <vector>
@@ -85,52 +86,37 @@ inline T* get(TDirectory* dir, const char* name) {
   }
 }
 
-class splicer {
-  vector<function<void(string&, const vector<string>* props)>> parts;
-
-public:
-  void operator()(string& str) { // consumes the input string
-    size_t sep, i;
-    while ((sep = str.find('\\'))!=string::npos) {
-      const string sub = str.substr(0,sep);
-      if (sub.size())
-        parts.emplace_back([sub](string& s, const vector<string>* props){
-          s += sub;
-        });
-      str.erase(0,sep+1);
-
-      int id;
-      try { id = std::stoi(str,&i); }
-      catch (...) {
-        throw runtime_error("--group: \\ not followed by a number");
-      }
-      parts.emplace_back([id](string& s, const vector<string>* props){
-        s += props->at(id < 0 ? props->size()+id : id );
-      });
-      str.erase(0,i);
-    }
-    if (str.size())
-      parts.emplace_back([str](string& s, const vector<string>* props){
-        s += str;
-      });
+string substitute(const string& str, const vector<string>& parts) {
+  string result;
+  size_t sep, n = 0;
+  const char *first = &str[0], *begin = first;
+  char *end;
+  while ((sep = str.find('\\',n))!=string::npos) {
+    sep -= n;
+    result.append(begin,sep);
+    begin += sep + 1;
+    if (!isdigit(*begin))
+      throw runtime_error("--group: \\ not followed by a number");
+    result += parts.at( strtol(begin,&end,10) );
+    begin = end;
+    n = begin - first;
   }
-  string operator()(const vector<string>* props) const {
-    string str;
-    for (auto &f : parts) f(str,props);
-    return str;
-  }
-};
+  result.append(begin,str.size()-n);
+  return result;
+}
 
+// VARS ---------------------------------------------------
 bool noN;
 unsigned ngroups = 1; // 0 don't sort, 1 sort
-splicer group_name;
-map<unsigned,boost::regex> rex;
+map<unsigned,boost::regex> rex, ign;
 using tokenizer = boost::tokenizer<boost::char_separator<char>>;
 map<unsigned,boost::char_separator<char>> tok;
 using group_map_t = unordered_map<
   string, pair<unsigned,vector<pair<TH1D*,vector<string>>>>
 >;
 group_map_t groups;
+string group_str;
+// --------------------------------------------------------
 
 void read_hists(TDirectory* dir, vector<string>& dir_names) {
   dir_names.emplace_back(dir->GetName());
@@ -172,12 +158,17 @@ void read_hists(TDirectory* dir, vector<string>& dir_names) {
         }
       }
 
+      bool ignore = false;
+      if (ign.size()) for (size_t i=0, n=props.size(); i<n; ++i) {
+        if (ign.count(i)) {
+          static boost::smatch result;
+          ignore = boost::regex_search(props[i], result, ign[i]);
+        }
+      }
+      if (ignore) continue;
+
       // Add to the map -----------------------------------
-      // if (props.size() <= group_by)
-      //   throw runtime_error("not enough properties");
-      // string group_prop = props[group_by];
-      // props.erase(props.begin()+group_by);
-      string group_prop = group_name(&props);
+      string group_prop = substitute(group_str,props);
       const bool exists = groups.count(group_prop);
       auto &g = groups[group_prop];
       g.second.emplace_back(h,move(props));
@@ -217,8 +208,7 @@ int main(int argc, char **argv)
     bool sort_groups;
     vector<pair<unsigned,string>> rex_str;
     vector<pair<unsigned,string>> tok_str;
-    // vector<pair<unsigned,string>> ign_str;
-    string group_str;
+    vector<pair<unsigned,string>> ign_str;
 
     // General Options ------------------------------------
     po::options_description all_opt("Options");
@@ -235,6 +225,8 @@ int main(int argc, char **argv)
      "(i:delim) split name")
     ("regex,r", po::value<vector<pair<unsigned,string>>>(&rex_str),
      "(i:regex) apply regular expression to name")
+    ("ignore,n", po::value<vector<pair<unsigned,string>>>(&ign_str),
+     "(i:regex) ignore matching ith name value")
     ("sort,s", po::bool_switch(&sort_groups),
      "alphabetically sort order of groups")
     ("no-N", po::bool_switch(&noN),
@@ -268,8 +260,8 @@ int main(int argc, char **argv)
     for (const auto& x : rex_str) rex.emplace(x.first, boost::regex(x.second));
     for (const auto& x : tok_str)
       tok.emplace(x.first, boost::char_separator<char>(x.second.c_str()));
+    for (const auto& x : ign_str) ign.emplace(x.first, boost::regex(x.second));
     if (sort_groups) ngroups = 0;
-    group_name(group_str);
   }
   catch(exception& e) {
     cerr << "\033[31mError: " <<  e.what() <<"\033[0m"<< endl;
@@ -310,7 +302,7 @@ int main(int argc, char **argv)
 
   vector<set<string>> uniq;
   for (auto &it : order) {
-    cout << it->first << ' ' << it->second.second.size() << endl;
+    // cout << it->first << ' ' << it->second.second.size() << endl;
     for (auto &s : it->second.second) {
       for (size_t i=0, n=s.second.size(); i<n; ++i) {
         if (uniq.size() < n) uniq.resize(n);
