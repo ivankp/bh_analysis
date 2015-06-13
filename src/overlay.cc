@@ -102,7 +102,7 @@ string substitute(const string& str, const vector<string>& parts) {
   return result;
 }
 
-bool ior_find(const string& in, const initializer_list<string>& l) {
+bool ior_contains(const string& in, const initializer_list<string>& l) {
   for (auto &s : l) {
     auto it = std::search(
       in.begin(), in.end(), s.begin(), s.end(),
@@ -425,7 +425,7 @@ int main(int argc, char **argv)
 
       // Cross section
       const Double_t sigma = (
-        ior_find(h->GetName(), {"_N_incl","inclusive"})
+        ior_contains(h->GetName(), {"_N_incl","inclusive"})
         ? h->GetAt(1) : h->Integral(0,nbins)
       );
 
@@ -475,25 +475,31 @@ int main(int argc, char **argv)
     TAxis *ya = first->GetYaxis();
     ya->SetTitleOffset(1.3);
 
-    if (ior_find(title, {"_pT"})) {
+    if (ior_contains(title, {"_pT"})) {
       xa->SetTitle("pT, GeV");
       ya->SetTitle("d#sigma/dpT, pb/GeV");
-    } else if (ior_find(title, {"_mass"})) {
+    } else if (ior_contains(title, {"_mass"})) {
       xa->SetTitle("m, GeV");
       ya->SetTitle("d#sigma/dm, pb/GeV");
-    } else if (ior_find(title, {"_y","_dy","_deltay"})) {
+    } else if (ior_contains(title, {"_y","_dy","_deltay"})) {
       xa->SetTitle("y");
       ya->SetTitle("d#sigma/dy, pb");
-    } else if (ior_find(title, {"_eta","_deta","_deltaeta"})) {
+    } else if (ior_contains(title, {"_eta","_deta","_deltaeta"})) {
       xa->SetTitle("#eta");
       ya->SetTitle("d#sigma/d#eta, pb");
-    } else if (ior_find(title, {"_phi","_dphi","_deltaphi"})) {
+    } else if (ior_contains(title, {"_phi","_dphi","_deltaphi"})) {
       xa->SetTitle("#phi, rad");
       ya->SetTitle("d#sigma/d#phi, pb/rad");
-    } else if (ior_find(title, {"_HT"})) {
+    } else if (ior_contains(title, {"_dR"})) {
+      xa->SetTitle("#DeltaR");
+      ya->SetTitle("d#sigma/dR, pb");
+    } else if (ior_contains(title, {"_mT"})) {
+      xa->SetTitle("mT, GeV");
+      ya->SetTitle("d#sigma/dmT, pb/GeV");
+    } else if (ior_contains(title, {"_HT"})) {
       xa->SetTitle("HT, GeV");
       ya->SetTitle("d#sigma/dHT, pb/GeV");
-    } else if (ior_find(title, {"_tau"})) {
+    } else if (ior_contains(title, {"_tau"})) {
       xa->SetTitle("#tau, GeV");
       ya->SetTitle("d#sigma/d#tau, pb/GeV");
     } else ya->SetTitle("d#sigma, pb");
