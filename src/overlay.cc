@@ -6,14 +6,11 @@
 #include <cstring>
 #include <cctype>
 #include <vector>
-#include <list>
+#include <unordered_map>
 #include <map>
 #include <set>
-#include <unordered_map>
 #include <algorithm>
-#include <tuple>
-#include <memory>
-#include <functional>
+#include <initializer_list>
 
 #include <boost/program_options.hpp>
 #include <boost/tokenizer.hpp>
@@ -75,7 +72,7 @@ namespace std {
   }
 }
 
-template<class T>
+template<class T = TObject>
 inline T* get(TDirectory* dir, const char* name) {
   T *obj = nullptr;
   dir->GetObject(name,obj);
@@ -105,6 +102,20 @@ string substitute(const string& str, const vector<string>& parts) {
   return result;
 }
 
+bool ior_find(const string& in, const initializer_list<string>& l) {
+  for (auto &s : l) {
+    auto it = std::search(
+      in.begin(), in.end(), s.begin(), s.end(),
+      [](char a, char b){ return std::tolower(a) == std::tolower(b); }
+    );
+    // test(in)
+    // test(s)
+    // test((it != s.end()))
+    if (it != in.end()) return true;
+  }
+  return false;
+}
+
 // VARS ---------------------------------------------------
 bool noN;
 unsigned ngroups = 1; // 0 don't sort, 1 sort
@@ -116,6 +127,7 @@ using group_map_t = unordered_map<
 >;
 group_map_t groups;
 string group_str;
+Double_t N_scale;
 // --------------------------------------------------------
 
 void read_hists(TDirectory* dir, vector<string>& dir_names) {
@@ -130,9 +142,13 @@ void read_hists(TDirectory* dir, vector<string>& dir_names) {
 
       TH1D *h = static_cast<TH1D*>(obj);
 
-      if (!noN) // Skip the N histogram
+      if (!noN) {
+        // Skip the N histogram
         if (dir->InheritsFrom(TFile::Class()) && !strcmp(h->GetName(),"N"))
           continue;
+
+        h->Scale(N_scale);
+      }
 
       // Parse names into properties ----------------------
       vector<string> props;
@@ -158,19 +174,20 @@ void read_hists(TDirectory* dir, vector<string>& dir_names) {
         }
       }
 
-      bool ignore = false;
-      if (ign.size()) for (size_t i=0, n=props.size(); i<n; ++i) {
-        if (ign.count(i)) {
-          static boost::smatch result;
-          ignore = boost::regex_search(props[i], result, ign[i]);
-        }
+      if (ign.size()) {
+        bool ignore = false;
+        for (size_t i=0, n=props.size(); i<n; ++i)
+          if (ign.count(i)) {
+            static boost::smatch result;
+            ignore = boost::regex_search(props[i], result, ign[i]);
+          }
+        if (ignore) continue;
       }
-      if (ignore) continue;
 
       // Add to the map -----------------------------------
       string group_prop = substitute(group_str,props);
       const bool exists = groups.count(group_prop);
-      auto &g = groups[group_prop];
+      auto &g = groups[move(group_prop)];
       g.second.emplace_back(h,move(props));
       if (!exists) g.first = (ngroups ? ++ngroups : 0);
 
@@ -203,6 +220,7 @@ int main(int argc, char **argv)
   // START OPTIONS **************************************************
   vector<string> fin_name;
   string fout_name;
+  bool prt_props, prt_saved;
 
   try {
     bool sort_groups;
@@ -211,16 +229,15 @@ int main(int argc, char **argv)
     vector<pair<unsigned,string>> ign_str;
 
     // General Options ------------------------------------
-    po::options_description all_opt("Options");
-    all_opt.add_options()
+    po::options_description opt("Options");
+    opt.add_options()
     ("help,h", "produce help message")
     ("input,i", po::value<vector<string>>(&fin_name)->required(),
      "*input files with histograms")
     ("output,o", po::value<string>(&fout_name),
      "output pdf plots")
     ("group,g", po::value<string>(&group_str)->default_value("\\0"),
-     "group by propery\n"
-     "\\0: hist, \\1: file, \\2-: dir")
+     "group by propery\n\\0: hist, \\1: file, \\2+: dir")
     ("tokenize,t", po::value<vector<pair<unsigned,string>>>(&tok_str),
      "(i:delim) split name")
     ("regex,r", po::value<vector<pair<unsigned,string>>>(&rex_str),
@@ -229,10 +246,13 @@ int main(int argc, char **argv)
      "(i:regex) ignore matching ith name value")
     ("sort,s", po::bool_switch(&sort_groups),
      "alphabetically sort order of groups")
-    ("no-N", po::bool_switch(&noN),
-     "no N histogram")
+    ("no-N", po::bool_switch(&noN), "no N histogram")
     ("sigma-prec", po::value<unsigned>(&sigma_prec)->default_value(3),
      "number of significant digits in cross section")
+    ("prt-props", po::bool_switch(&prt_props),
+     "print available properties")
+    ("prt-saved", po::bool_switch(&prt_saved),
+     "print groups as they are saved")
     ;
 
     po::positional_options_description pos;
@@ -240,9 +260,9 @@ int main(int argc, char **argv)
 
     po::variables_map vm;
     po::store(po::command_line_parser(argc, argv)
-      .options(all_opt).positional(pos).run(), vm);
+      .options(opt).positional(pos).run(), vm);
     if (argc == 1 || vm.count("help")) {
-      cout << all_opt << endl;
+      cout << opt << endl;
       return 0;
     }
     po::notify(vm);
@@ -270,15 +290,15 @@ int main(int argc, char **argv)
   // END OPTIONS ****************************************************
 
   // Read histograms ************************************************
-  vector<pair<TFile* const,Double_t>> fin;
-  for (const auto& name : fin_name) {
+  vector<TFile*> fin;
+  for (const auto &name : fin_name) {
     TFile *f = new TFile(name.c_str(),"read");
     if (f->IsZombie()) return 1;
-    fin.emplace_back(f,0);
+    fin.push_back(f);
   }
-  for (auto& f : fin) {
-    if (!noN) f.second = get<TH1D>(f.first,"N")->GetAt(1);
-    read_hists(f.first);
+  for (auto &f : fin) {
+    if (!noN) N_scale = 1./get<TH1D>(f,"N")->GetAt(1);
+    read_hists(f);
   }
 
   vector<group_map_t::iterator> order;
@@ -300,8 +320,9 @@ int main(int argc, char **argv)
     );
   }
 
+  // fill sets of properties
   vector<set<string>> uniq;
-  for (auto &it : order) {
+  for (auto it : order) {
     // cout << it->first << ' ' << it->second.second.size() << endl;
     for (auto &s : it->second.second) {
       for (size_t i=0, n=s.second.size(); i<n; ++i) {
@@ -311,10 +332,182 @@ int main(int argc, char **argv)
     }
   }
 
-  for (size_t i=0, n=uniq.size(); i<n; ++i)
-    for (auto &x : uniq[i])
-      cout << i << ": " << x << endl;
+  // print sets of properties
+  if (prt_props) {
+    for (size_t i=0, n=uniq.size(); i<n; ++i) {
+      bool first = true;
+      for (auto &x : uniq[i]) {
+        if (first) {
+          cout << setw(3) << i << ": ";
+          first = false;
+        } else cout << "     ";
+        cout << x << endl;
+      }
+    }
+    return 0;
+  }
 
-  for (auto &f : fin) delete f.first;
+  set<size_t> rm_props;
+
+  if (prt_props) {
+    // list available properties
+    for (size_t i=0, n=uniq.size(); i<n; ++i) {
+      bool first = true;
+      for (auto &x : uniq[i]) {
+        if (first) {
+          cout << setw(3) << i << ": ";
+          first = false;
+        } else cout << "     ";
+        cout << x << endl;
+      }
+    }
+    return 0;
+  } else {
+
+    // properties used for groups
+    size_t sep, n = 0;
+    const char *first = &group_str[0], *begin = first;
+    char *end;
+    while ((sep = group_str.find('\\',n))!=string::npos) {
+      begin += (sep -= n) + 1;
+      rm_props.insert( strtol(begin,&end,10) );
+      n = (begin = end) - first;
+    }
+
+    // common properties
+    for (size_t i=0, n=uniq.size(); i<n; ++i)
+      if (uniq[i].size()==1) rm_props.insert(i);
+
+/*
+    for (auto i : rm_props) test(i)
+
+    // remove properties
+    for (auto it : order) {
+      for (auto &s : it->second.second) {
+        size_t r = 0;
+        for (size_t i=0; i<s.second.size(); ++i) {
+          if (rm_props.count(i)) {
+            s.second.erase(s.second.begin()+(i-r));
+            ++r;
+          }
+        }
+      }
+    }
+    */
+  }
+
+  // Draw ***********************************************************
+  gStyle->SetOptStat(0);
+
+  TLine zero;
+  zero.SetLineStyle(7);
+
+  TCanvas canv;
+  canv.SaveAs((fout_name+'[').c_str());
+
+  // string, pair<unsigned,vector<pair<TH1D*,vector<string>>>>
+  for (auto it : order) {
+    const auto& hists = it->second.second;
+    hist_range y_range;
+
+    TLegend leg(0.72,0.92-0.0325*hists.size(),0.95,0.92);
+    TLegend sig(leg.GetX1(),2*leg.GetY1()-leg.GetY2(),
+                leg.GetX2(),leg.GetY1());
+    leg.SetFillColorAlpha(0,0.65);
+    sig.SetFillColorAlpha(0,0.65);
+
+    int i = 0;
+    TH1D *first = nullptr;
+    for (const auto& hp : hists) {
+      TH1D *h = hp.first;
+
+      const Int_t nbins = h->GetNbinsX()+1;
+
+      // Cross section
+      const Double_t sigma = (
+        ior_find(h->GetName(), {"_N_incl","inclusive"})
+        ? h->GetAt(1) : h->Integral(0,nbins)
+      );
+
+      for (Int_t i=0; i<nbins; ++i)
+        h->SetAt(h->GetAt(i)/(h->GetBinWidth(i)),i);
+
+      y_range(h->GetMinimum(),h->GetMaximum());
+
+      if (i==0) {
+        first = h;
+        h->Draw();
+      } else h->Draw("same");
+
+      h->SetLineWidth(2);
+      h->SetLineColor(color[i]);
+      h->SetMarkerColor(color[i]);
+      h->Sumw2(false);
+      string leg_name;
+      for (size_t i=0, n=hp.second.size(); i<n; ++i) {
+        if (rm_props.count(i)) continue;
+        if (leg_name.size()) leg_name += '_';
+        leg_name += hp.second[i];
+      }
+      leg.AddEntry(h,leg_name.c_str());
+      sig.AddEntry(h,sigma_prt(sigma).c_str());
+
+      ++i;
+    }
+
+    TLine top_corner_cover(leg.GetX1(),0.9,0.91,0.9);
+    TLine right_corner_cover(0.9,sig.GetY1(),0.9,0.91);
+    top_corner_cover.SetNDC();
+    right_corner_cover.SetNDC();
+    top_corner_cover.SetLineColor(0);
+    right_corner_cover.SetLineColor(0);
+    top_corner_cover.SetLineWidth(3);
+    right_corner_cover.SetLineWidth(3);
+
+    const string& title = it->first;
+    y_range(first)->SetTitle(title.c_str());
+
+    if (first->GetMinimum()<0. && 0.<first->GetMaximum())
+      zero.DrawLine(first->GetBinLowEdge(1),0,
+                    first->GetBinLowEdge(first->GetNbinsX()+1),0);
+
+    TAxis *xa = first->GetXaxis();
+    TAxis *ya = first->GetYaxis();
+    ya->SetTitleOffset(1.3);
+
+    if (ior_find(title, {"_pT"})) {
+      xa->SetTitle("pT, GeV");
+      ya->SetTitle("d#sigma/dpT, pb/GeV");
+    } else if (ior_find(title, {"_mass"})) {
+      xa->SetTitle("m, GeV");
+      ya->SetTitle("d#sigma/dm, pb/GeV");
+    } else if (ior_find(title, {"_y","_dy","_deltay"})) {
+      xa->SetTitle("y");
+      ya->SetTitle("d#sigma/dy, pb");
+    } else if (ior_find(title, {"_eta","_deta","_deltaeta"})) {
+      xa->SetTitle("#eta");
+      ya->SetTitle("d#sigma/d#eta, pb");
+    } else if (ior_find(title, {"_phi","_dphi","_deltaphi"})) {
+      xa->SetTitle("#phi, rad");
+      ya->SetTitle("d#sigma/d#phi, pb/rad");
+    } else if (ior_find(title, {"_HT"})) {
+      xa->SetTitle("HT, GeV");
+      ya->SetTitle("d#sigma/dHT, pb/GeV");
+    } else if (ior_find(title, {"_tau"})) {
+      xa->SetTitle("#tau, GeV");
+      ya->SetTitle("d#sigma/d#tau, pb/GeV");
+    } else ya->SetTitle("d#sigma, pb");
+
+    top_corner_cover.Draw();
+    right_corner_cover.Draw();
+    leg.Draw();
+    sig.Draw();
+
+    canv.SaveAs(fout_name.c_str());
+  }
+
+  canv.SaveAs((fout_name+']').c_str());
+
+  for (auto &f : fin) delete f;
   return 0;
 }
