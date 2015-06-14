@@ -85,11 +85,30 @@ inline T* get(TDirectory* dir, const char* name) {
   }
 }
 
+bool ior_contains(const string& in, const initializer_list<string>& l) {
+  for (auto &s : l) {
+    auto it = std::search(
+      in.begin(), in.end(), s.begin(), s.end(),
+      [](char a, char b){ return std::tolower(a) == std::tolower(b); }
+    );
+    if (it != in.end()) return true;
+  }
+  return false;
+}
+
+template<class T> string cat(const T& container, const string& delim) {
+  string s;
+  auto it = container.begin();
+  const auto end = container.end();
+  if (it==end) return s;
+  s += *(it++);
+  for (;it!=end;++it) (s += delim) += *it;
+  return s;
+}
+
 template<typename T> void backadder(string& str, const T& add) { str += add; }
 template<> void backadder<set<string>>(string& str, const set<string>& add) {
-  auto it=add.begin(), end=add.end();
-  if (it != end) str += *(it++);
-  for (; it!=end; ++it) (str += ", ") += *it;
+  str += cat(add, ", ");
 }
 
 template<typename T>
@@ -110,26 +129,6 @@ string substitute(const string& str, const vector<T>& parts) {
   }
   result.append(begin,str.size()-n);
   return result;
-}
-
-bool ior_contains(const string& in, const initializer_list<string>& l) {
-  for (auto &s : l) {
-    auto it = std::search(
-      in.begin(), in.end(), s.begin(), s.end(),
-      [](char a, char b){ return std::tolower(a) == std::tolower(b); }
-    );
-    if (it != in.end()) return true;
-  }
-  return false;
-}
-
-template<class T> string cat(const T& container, const string& delim) {
-  string s;
-  const auto it = container.begin(), end = container.end();
-  if (it==end) return s;
-  s += *(it++);
-  for (;it!=end;++it) (s += delim) += *it;
-  return s;
 }
 
 class comma_numpunct : public std::numpunct<char> {
@@ -388,7 +387,6 @@ int main(int argc, char **argv)
     }
     return 0;
   } else {
-
     // properties used for groups
     size_t sep, n = 0;
     const char *first = &group_str[0], *begin = first;
@@ -398,27 +396,9 @@ int main(int argc, char **argv)
       rm_props.insert( strtol(begin,&end,10) );
       n = (begin = end) - first;
     }
-
     // common properties
     for (size_t i=0, n=uniq.size(); i<n; ++i)
       if (uniq[i].size()==1) rm_props.insert(i);
-
-/*
-    for (auto i : rm_props) test(i)
-
-    // remove properties
-    for (auto it : order) {
-      for (auto &s : it->second.second) {
-        size_t r = 0;
-        for (size_t i=0; i<s.second.size(); ++i) {
-          if (rm_props.count(i)) {
-            s.second.erase(s.second.begin()+(i-r));
-            ++r;
-          }
-        }
-      }
-    }
-    */
   }
 
   // Draw ***********************************************************
