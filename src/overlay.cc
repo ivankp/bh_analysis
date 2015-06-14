@@ -11,6 +11,7 @@
 #include <set>
 #include <algorithm>
 #include <initializer_list>
+#include <memory>
 
 #include <boost/program_options.hpp>
 #include <boost/tokenizer.hpp>
@@ -25,6 +26,7 @@
 #include <TLegend.h>
 #include <TLine.h>
 #include <TText.h>
+#include <TLatex.h>
 #include <TAxis.h>
 
 #include "hist_range.hh"
@@ -83,7 +85,15 @@ inline T* get(TDirectory* dir, const char* name) {
   }
 }
 
-string substitute(const string& str, const vector<string>& parts) {
+template<typename T> void backadder(string& str, const T& add) { str += add; }
+template<> void backadder<set<string>>(string& str, const set<string>& add) {
+  auto it=add.begin(), end=add.end();
+  if (it != end) str += *(it++);
+  for (; it!=end; ++it) (str += ", ") += *it;
+}
+
+template<typename T>
+string substitute(const string& str, const vector<T>& parts) {
   string result;
   size_t sep, n = 0;
   const char *first = &str[0], *begin = first;
@@ -94,7 +104,7 @@ string substitute(const string& str, const vector<string>& parts) {
     begin += sep + 1;
     if (!isdigit(*begin))
       throw runtime_error("--group: \\ not followed by a number");
-    result += parts.at( strtol(begin,&end,10) );
+    backadder<T>(result, parts.at( strtol(begin,&end,10) ));
     begin = end;
     n = begin - first;
   }
@@ -108,13 +118,25 @@ bool ior_contains(const string& in, const initializer_list<string>& l) {
       in.begin(), in.end(), s.begin(), s.end(),
       [](char a, char b){ return std::tolower(a) == std::tolower(b); }
     );
-    // test(in)
-    // test(s)
-    // test((it != s.end()))
     if (it != in.end()) return true;
   }
   return false;
 }
+
+template<class T> string cat(const T& container, const string& delim) {
+  string s;
+  const auto it = container.begin(), end = container.end();
+  if (it==end) return s;
+  s += *(it++);
+  for (;it!=end;++it) (s += delim) += *it;
+  return s;
+}
+
+class comma_numpunct : public std::numpunct<char> {
+protected:
+  virtual char do_thousands_sep()   const { return ','; }
+  virtual std::string do_grouping() const { return "\03"; }
+};
 
 // VARS ---------------------------------------------------
 bool noN;
@@ -218,7 +240,7 @@ constexpr Color_t color[] = { 2, 3, 4, 6, 7, 8, 9, 28, 30, 46 };
 int main(int argc, char **argv)
 {
   // START OPTIONS **************************************************
-  vector<string> fin_name;
+  vector<string> fin_name, labels;
   string fout_name;
   bool prt_props, prt_saved;
 
@@ -246,6 +268,8 @@ int main(int argc, char **argv)
      "(i:regex) ignore matching ith name value")
     ("sort,s", po::bool_switch(&sort_groups),
      "alphabetically sort order of groups")
+    ("label,l", po::value<vector<string>>(&labels),
+     "add a label")
     ("no-N", po::bool_switch(&noN), "no N histogram")
     ("sigma-prec", po::value<unsigned>(&sigma_prec)->default_value(3),
      "number of significant digits in cross section")
@@ -290,15 +314,16 @@ int main(int argc, char **argv)
   // END OPTIONS ****************************************************
 
   // Read histograms ************************************************
-  vector<TFile*> fin;
+  vector<unique_ptr<TFile>> fin;
+  fin.reserve(fin_name.size());
   for (const auto &name : fin_name) {
     TFile *f = new TFile(name.c_str(),"read");
     if (f->IsZombie()) return 1;
-    fin.push_back(f);
+    fin.emplace_back(f);
   }
   for (auto &f : fin) {
-    if (!noN) N_scale = 1./get<TH1D>(f,"N")->GetAt(1);
-    read_hists(f);
+    if (!noN) N_scale = 1./get<TH1D>(f.get(),"N")->GetAt(1);
+    read_hists(f.get());
   }
 
   vector<group_map_t::iterator> order;
@@ -465,6 +490,7 @@ int main(int argc, char **argv)
     right_corner_cover.SetLineWidth(3);
 
     const string& title = it->first;
+    const string first_name(first->GetName());
     y_range(first)->SetTitle(title.c_str());
 
     if (first->GetMinimum()<0. && 0.<first->GetMaximum())
@@ -475,31 +501,31 @@ int main(int argc, char **argv)
     TAxis *ya = first->GetYaxis();
     ya->SetTitleOffset(1.3);
 
-    if (ior_contains(title, {"_pT"})) {
+    if (ior_contains(first_name, {"_pT"})) {
       xa->SetTitle("pT, GeV");
       ya->SetTitle("d#sigma/dpT, pb/GeV");
-    } else if (ior_contains(title, {"_mass"})) {
+    } else if (ior_contains(first_name, {"_mass"})) {
       xa->SetTitle("m, GeV");
       ya->SetTitle("d#sigma/dm, pb/GeV");
-    } else if (ior_contains(title, {"_y","_dy","_deltay"})) {
+    } else if (ior_contains(first_name, {"_y","_dy","_deltay"})) {
       xa->SetTitle("y");
       ya->SetTitle("d#sigma/dy, pb");
-    } else if (ior_contains(title, {"_eta","_deta","_deltaeta"})) {
+    } else if (ior_contains(first_name, {"_eta","_deta","_deltaeta"})) {
       xa->SetTitle("#eta");
       ya->SetTitle("d#sigma/d#eta, pb");
-    } else if (ior_contains(title, {"_phi","_dphi","_deltaphi"})) {
+    } else if (ior_contains(first_name, {"_phi","_dphi","_deltaphi"})) {
       xa->SetTitle("#phi, rad");
       ya->SetTitle("d#sigma/d#phi, pb/rad");
-    } else if (ior_contains(title, {"_dR"})) {
+    } else if (ior_contains(first_name, {"_dR"})) {
       xa->SetTitle("#DeltaR");
       ya->SetTitle("d#sigma/dR, pb");
-    } else if (ior_contains(title, {"_mT"})) {
+    } else if (ior_contains(first_name, {"_mT"})) {
       xa->SetTitle("mT, GeV");
       ya->SetTitle("d#sigma/dmT, pb/GeV");
-    } else if (ior_contains(title, {"_HT"})) {
+    } else if (ior_contains(first_name, {"_HT"})) {
       xa->SetTitle("HT, GeV");
       ya->SetTitle("d#sigma/dHT, pb/GeV");
-    } else if (ior_contains(title, {"_tau"})) {
+    } else if (ior_contains(first_name, {"_tau"})) {
       xa->SetTitle("#tau, GeV");
       ya->SetTitle("d#sigma/d#tau, pb/GeV");
     } else ya->SetTitle("d#sigma, pb");
@@ -509,11 +535,26 @@ int main(int argc, char **argv)
     leg.Draw();
     sig.Draw();
 
+    Double_t lbl_x = 0.73, lbl_y = sig.GetY1()+0.03;
+
+    vector<unique_ptr<TLatex>> lbl;
+    lbl.reserve(labels.size());
+    for (const string& lbl_name : labels) {
+      lbl.emplace_back( new TLatex( lbl_x, lbl_y-=0.045,
+        substitute(lbl_name,uniq).c_str()
+      ) );
+      lbl.back()->SetNDC();
+      lbl.back()->SetTextAlign(13);
+      lbl.back()->SetTextFont(42);
+      lbl.back()->SetTextSize(0.035);
+      lbl.back()->Draw();
+    }
+
+    if (prt_saved) cout << title << endl;
     canv.SaveAs(fout_name.c_str());
   }
 
   canv.SaveAs((fout_name+']').c_str());
 
-  for (auto &f : fin) delete f;
   return 0;
 }
