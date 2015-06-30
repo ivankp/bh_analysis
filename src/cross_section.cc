@@ -190,11 +190,14 @@ int main(int argc, char** argv)
     for ( Int_t i=0, n=brs->GetEntries(); i<n; ++i ) {
       TBranch *br = static_cast<TBranch*>( brs->At(i) );
       if (!br->TestBit(kDoNotProcess)) {
-        // cout << br->GetName() << " added to cache" << endl;
-        bh_tree->AddBranchToCache(br,kTRUE);
+        if ( bh_tree->AddBranchToCache(br,kTRUE) < 0) {
+          cerr << "In BH Tree: Could not cache branch "
+               << br->GetName() << endl;
+          return 1;
+        }
       }
-      bh_tree->StopCacheLearningPhase();
     }
+    bh_tree->StopCacheLearningPhase();
 
     if (wt_given) {
       wt_tree->SetCacheSize(cache_size);
@@ -202,8 +205,11 @@ int main(int argc, char** argv)
       for ( Int_t i=0, n=brs->GetEntries(); i<n; ++i ) {
         TBranch *br = static_cast<TBranch*>( brs->At(i) );
         if (!br->TestBit(kDoNotProcess)) {
-          // cout << br->GetName() << " added to cache" << endl;
-          wt_tree->AddBranchToCache(br,kTRUE);
+          if ( wt_tree->AddBranchToCache(br,kTRUE) < 0) {
+            cerr << "In weight Tree: Could not cache branch "
+                 << br->GetName() << endl;
+            return 1;
+          }
         }
       }
       wt_tree->StopCacheLearningPhase();

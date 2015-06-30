@@ -240,7 +240,7 @@ int main(int argc, char **argv)
 {
   // START OPTIONS **************************************************
   vector<string> fin_name, labels;
-  string fout_name;
+  string fout_name, draw_opt;
   bool prt_props, prt_saved;
 
   try {
@@ -270,6 +270,7 @@ int main(int argc, char **argv)
     ("label,l", po::value<vector<string>>(&labels),
      "add a label")
     ("no-N", po::bool_switch(&noN), "no N histogram")
+    ("draw", po::value<string>(&draw_opt), "TH1 Draw options")
     ("sigma-prec", po::value<unsigned>(&sigma_prec)->default_value(3),
      "number of significant digits in cross section")
     ("prt-props", po::bool_switch(&prt_props),
@@ -441,8 +442,11 @@ int main(int argc, char **argv)
 
       if (i==0) {
         first = h;
-        h->Draw();
-      } else h->Draw("same");
+        h->Draw(draw_opt.c_str());
+      } else {
+        static string draw_opt_same = draw_opt + "same";
+        h->Draw(draw_opt_same.c_str());
+      }
 
       h->SetLineWidth(2);
       h->SetLineColor(color[i]);

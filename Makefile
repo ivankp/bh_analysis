@@ -85,7 +85,7 @@ bin/cross_section: bin/%: lib/%.o
 
 $(HIST_EXE): bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m"
-	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(ROOT_LIBS) $(FJ_LIBS) -lboost_program_options
+	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(ROOT_LIBS) $(FJ_LIBS) -lboost_program_options -lboost_regex
 
 # Objects' dependencies #############################################
 lib/hist_wt.o: parts/weight.hh
