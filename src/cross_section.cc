@@ -190,11 +190,15 @@ int main(int argc, char** argv)
     for ( Int_t i=0, n=brs->GetEntries(); i<n; ++i ) {
       TBranch *br = static_cast<TBranch*>( brs->At(i) );
       if (!br->TestBit(kDoNotProcess)) {
-        if ( bh_tree->AddBranchToCache(br,kTRUE) < 0) {
-          cerr << "In BH Tree: Could not cache branch "
-               << br->GetName() << endl;
-          return 1;
-        }
+        #if ROOT_VERSION_CODE >= ROOT_VERSION(6,04,00)
+          if (bh_tree->AddBranchToCache(br,kTRUE) < 0) {
+            cerr << "In BH Tree: Could not cache branch "
+                 << br->GetName() << endl;
+            return 1;
+          }
+        #else
+          bh_tree->AddBranchToCache(br,kTRUE);
+        #endif
       }
     }
     bh_tree->StopCacheLearningPhase();
@@ -205,11 +209,15 @@ int main(int argc, char** argv)
       for ( Int_t i=0, n=brs->GetEntries(); i<n; ++i ) {
         TBranch *br = static_cast<TBranch*>( brs->At(i) );
         if (!br->TestBit(kDoNotProcess)) {
-          if ( wt_tree->AddBranchToCache(br,kTRUE) < 0) {
-            cerr << "In weight Tree: Could not cache branch "
-                 << br->GetName() << endl;
-            return 1;
-          }
+          #if ROOT_VERSION_CODE >= ROOT_VERSION(6,04,00)
+            if (wt_tree->AddBranchToCache(br,kTRUE) < 0) {
+              cerr << "In weight Tree: Could not cache branch "
+                   << br->GetName() << endl;
+              return 1;
+            }
+          #else
+            wt_tree->AddBranchToCache(br,kTRUE);
+          #endif
         }
       }
       wt_tree->StopCacheLearningPhase();
