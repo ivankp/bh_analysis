@@ -20,7 +20,7 @@ arr=(`echo $set | tr '|' ' '`)
 wt="${arr[1]}/${arr[2]}"
 
 if [ -a "$wt" ]; then
-  printf "."
+  echo "."
   continue;
 fi
 
@@ -34,9 +34,9 @@ cmd="$ana/bin/reweigh --bh=\"$bh\" -c \"$ana/config/rew_Ht2.xml\" -o \"$wt\" --p
 # Form temporary wrapper script
 
 echo "#!/bin/bash" > $out/$name.sh
-echo "LIBRARY_PATH=/home/ivanp/local/gcc/lib64:\$LIBRARY_PATH" >> $out/$name.sh
-echo "echo \$LIBRARY_PATH" >> $out/$name.sh
-echo "which g++" >> $out/$name.sh
+#echo "LD_LIBRARY_PATH=\`echo \$LD_LIBRARY_PATH | sed 's|\(/lib64:/usr/lib64\):\(.*\)|\2:\1|'\`" >> $out/$name.sh
+echo 'LD_LIBRARY_PATH=/home/ivanp/local/gcc/lib64:/home/ivanp/local/lib:$LD_LIBRARY_PATH' >> $out/$name.sh
+echo 'echo $LD_LIBRARY_PATH' >> $out/$name.sh
 echo "ldd $ana/bin/reweigh" >> $out/$name.sh
 echo "$cmd" >> $out/$name.sh
 chmod +x $out/$name.sh
