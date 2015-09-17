@@ -11,8 +11,10 @@ sqlite3 $db "create table plots (
   part TEXT,
   scales TEXT,
   jalg TEXT,
+  pdf TEXT,
   vbf TEXT,
-  maa TEXT
+  maa TEXT,
+  eta TEXT
 );"
 
 #ls ~/disk2/hist/plots | sed 's/\_/\", \"/g;s/\.pdf/\" ],/;s/^/[ \"/' | column -t
@@ -24,24 +26,27 @@ for f in `ls ~/disk2/hist/plots | sed 's/\.pdf//'`; do
 
   vbf="none"
   maa="none"
+  eta="4.4"
 
-  for i in {6..7}; do
-    for cut in "VBF" "MAA"; do
-      match=`echo ${arr[((i-1))]} | sed -n "s/^$cut//p"`
+  for i in {6..8}; do
+    for cut in "VBF" "MAA" "eta"; do
+      match=`echo ${arr[i]} | sed -n "s/^$cut//p"`
       if [ "$match" ]; then
         if [ "$cut" == "VBF" ]; then
           vbf=$match
         elif [ "$cut" == "MAA" ]; then
           maa=$match
+        elif [ "$cut" == "eta" ]; then
+          eta=$match
         fi
       fi
     done
   done
 
   sqlite3 $db "insert into plots
-    (particle,njets,energy,part,scales,jalg,vbf,maa)
+    (particle,njets,energy,part,scales,jalg,pdf,vbf,maa,eta)
     values
-    ('${pj[0]}','${pj[1]}','${arr[1]}','${arr[2]}','${arr[3]}','${arr[4]}','$vbf','$maa');"
+    ('${pj[0]}','${pj[1]}','${arr[1]}','${arr[2]}','${arr[3]}','${arr[4]}','${arr[5]}','$vbf','$maa','$eta');"
 
   printf '.'
 
@@ -50,7 +55,7 @@ echo ""
 
 fi
 
-sqlite3 -separator ' '  $db "select particle, njets, energy, scales, jalg, vbf, maa, part from plots
+sqlite3 -separator ' '  $db "select particle, njets, energy, scales, jalg, pdf, vbf, maa, eta, part from plots
   order by
     CASE WHEN particle = 'H'  THEN 0
          WHEN particle = 'AA' THEN 1 END,

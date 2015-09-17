@@ -5,7 +5,7 @@ dir=/msu/data/t3work2/ivanp
 out=$dir/condor
 histdir=$dir/hist/raw
 
-group_size=500
+group_size=50
 
 mkdir -p $out
 mkdir -p $histdir
@@ -14,24 +14,24 @@ db="$dir/ntuples.db"
 
 #####################################################################
 
-MAA="115:135"
+#MAA="115:135"
 
 for jalg in AntiKt4
 do
 
-for VBF in none hardest any
+for VBF in none # hardest any
 do
 
 for set in `sqlite3 $db "
-  SELECT distinct particle, njets, energy, part, wt.scales
+  SELECT distinct particle, njets, energy, part, wt.scales, wt.pdf
   FROM bh
   JOIN wt ON bh.id = wt.bh_id
-  WHERE wt.scales = 'HT2-unc' and particle = 'AA'
+  WHERE wt.pdf = 'CT10nlo' and particle = 'H' and wt.scales = 'HT2-unc' and energy = 13
 "`; do
 
 arr=(`echo $set | tr '|' ' '`)
 arr[2]=`printf "%.0f" ${arr[2]}` # round real-valued energy
-base="${arr[0]}${arr[1]}j_${arr[2]}TeV_${arr[3]}_${arr[4]}_$jalg"
+base="${arr[0]}${arr[1]}j_${arr[2]}TeV_${arr[3]}_${arr[4]}_${jalg}_${arr[5]}_eta2.5"
 
 if [ "$VBF" != "none" ]; then
   base=$base"_VBF$VBF"
@@ -45,7 +45,8 @@ sql="
   FROM bh
   JOIN wt ON bh.id = wt.bh_id
   WHERE particle='${arr[0]}' and njets=${arr[1]} and
-        energy=${arr[2]} and part='${arr[3]}' and wt.scales='${arr[4]}'
+        energy=${arr[2]} and part='${arr[3]}' and
+        wt.scales='${arr[4]}' and wt.pdf='${arr[5]}'
 "
 
 min=`sqlite3 $db "SELECT min(sid) $sql"`
@@ -63,13 +64,13 @@ if [ `python -c "print ($max-$end) < ($group_size*0.5)"` == "True" ]; then
   (( end = max ))
 fi
 
-name=$base"_$begin-$end"
+name="${base}_${begin}-${end}"
 
 echo $name
 
 # Form arguments
 
-args="-o $histdir/$name.root -j ${arr[1]} -c $jalg --VBF=$VBF --cache=500"
+args="-o $histdir/$name.root -j ${arr[1]} -c $jalg --VBF=$VBF --cache=500 --jet-eta-cut=2.5"
 
 if [ "${arr[0]}" == "AA" ]; then
   args="$args --AA"
@@ -87,6 +88,9 @@ args="$args `sqlite3 $db "
 # Form temporary wrapper script
 
 echo "#!/bin/bash" > $out/$name.sh
+echo 'LD_LIBRARY_PATH=/home/ivanp/local/gcc/lib64:/home/ivanp/local/lib:$LD_LIBRARY_PATH' >> $out/$name.sh
+echo 'echo $LD_LIBRARY_PATH' >> $out/$name.sh
+echo "ldd $ana/bin/reweigh" >> $out/$name.sh
 echo $exe $args >> $out/$name.sh
 chmod +x $out/$name.sh
 
