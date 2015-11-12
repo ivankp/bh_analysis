@@ -33,4 +33,5 @@ with open(sys.argv[1].rsplit('/',1)[-1].rsplit('.',1)[0]+'_'+sys.argv[2]+'.yoda'
                     )
                     hist = True
                     skip = 1
+    print fout.name
 
