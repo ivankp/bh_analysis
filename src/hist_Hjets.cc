@@ -87,7 +87,7 @@ int main(int argc, char** argv)
 {
   // START OPTIONS **************************************************
   vector<string> bh_files, sj_files, wt_files, weights;
-  string output_file, css_file, jet_alg;
+  string output_file, css_file, jet_alg, tree_name;
   size_t njets;
   double jet_pt_cut, jet_eta_cut;
   real_range<Double_t> AA_mass_cut;
@@ -118,6 +118,8 @@ int main(int argc, char** argv)
        "weight branchs; if skipped:\n"
        "  without --wt: ntuple weight2 is used\n"
        "  with --wt: all weights from wt files")
+      ("tree-name", po::value(&tree_name)->default_value("t3"),
+       "change ntuple TTree name")
 
       ("njets,j", po::value<size_t>(&njets)->required(),
        "*minimum number of jets per ntuple entry")
@@ -168,12 +170,12 @@ int main(int argc, char** argv)
   }
   catch(exception& e) {
     cerr << "\033[31mError: " <<  e.what() <<"\033[0m"<< endl;
-    exit(1);
+    return 1;
   }
   // END OPTIONS ****************************************************
 
   // Setup input files **********************************************
-  TChain* const bh_tree = new TChain("t3");
+  TChain* const bh_tree = new TChain(tree_name.c_str());
   TChain* const sj_tree = (sj_given ? new TChain("SpartyJet_Tree") : nullptr);
   TChain* const wt_tree = (wt_given ? new TChain("weights") : nullptr);
 
@@ -181,20 +183,20 @@ int main(int argc, char** argv)
   cout << "BH files:" << endl;
   for (auto& f : bh_files) {
     cout << "  " << f << endl;
-    if (!bh_tree->AddFile(f.c_str(),-1) ) exit(1);
+    if (!bh_tree->AddFile(f.c_str(),-1) ) return 1;
   }
   if (sj_given) {
     cout << "SJ files:" << endl;
     for (auto& f : sj_files) {
       cout << "  " << f << endl;
-      if (!sj_tree->AddFile(f.c_str(),-1) ) exit(1);
+      if (!sj_tree->AddFile(f.c_str(),-1) ) return 1;
     }
   }
   if (wt_given) {
     cout << "Weight files:" << endl;
     for (auto& f : wt_files) {
       cout << "  " << f << endl;
-      if (!wt_tree->AddFile(f.c_str(),-1) ) exit(1);
+      if (!wt_tree->AddFile(f.c_str(),-1) ) return 1;
     }
   }
   cout << endl;
@@ -205,29 +207,29 @@ int main(int argc, char** argv)
     if (need_ent>bh_tree->GetEntries()) {
       cerr << "Fewer entries in BH chain (" << bh_tree->GetEntries()
          << ") then requested (" << need_ent << ')' << endl;
-      exit(1);
+      return 1;
     }
     if (sj_given) if (need_ent>sj_tree->GetEntries()) {
       cerr << "Fewer entries in SJ chain (" << sj_tree->GetEntries()
          << ") then requested (" << need_ent << ')' << endl;
-      exit(1);
+      return 1;
     }
     if (wt_given) if (need_ent>wt_tree->GetEntries()) {
       cerr << "Fewer entries in weights chain (" << wt_tree->GetEntries()
          << ") then requested (" << need_ent << ')' << endl;
-      exit(1);
+      return 1;
     }
   } else {
     ents.len = bh_tree->GetEntries();
     if (sj_given) if (ents.len!=sj_tree->GetEntries()) {
       cerr << ents.len << " entries in BH chain, but "
            << sj_tree->GetEntries() << " entries in SJ chain" << endl;
-      exit(1);
+      return 1;
     }
     if (wt_given) if (ents.len!=wt_tree->GetEntries()) {
       cerr << ents.len << " entries in BH chain, but "
            << wt_tree->GetEntries() << " entries in weights chain" << endl;
-      exit(1);
+      return 1;
     }
   }
 
@@ -346,7 +348,7 @@ int main(int argc, char** argv)
 
   // Open output file with histograms *******************************
   TFile* fout = new TFile(output_file.c_str(),"recreate");
-  if (fout->IsZombie()) exit(1);
+  if (fout->IsZombie()) return 1;
   else cout << "Output file: " << fout->GetName() << endl << endl;
 
   // Make directories ***********************************************
@@ -514,7 +516,7 @@ int main(int argc, char** argv)
       if (Hi==event.nparticle) {
         if (!quiet)
           cerr << "\033[31mNo Higgs in event " << ent <<"\033[0m"<< endl;
-        if (strict) exit(1); else continue;
+        if (strict) return 1; else continue;
       }
 
     }

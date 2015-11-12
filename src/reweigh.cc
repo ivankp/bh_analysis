@@ -63,7 +63,7 @@ BHEvent event; // extern
 int main(int argc, char** argv)
 {
   // START OPTIONS **************************************************
-  string BH_file, weights_file, pdf_set, xml_file;
+  string BH_file, weights_file, pdf_set, xml_file, tree_name;
   bool old_bh, counter_newline;
   pair<Long64_t,Long64_t> num_ent {0,0};
 
@@ -80,6 +80,8 @@ int main(int argc, char** argv)
        "*output root file with new event weights")
       ("pdf", po::value<string>(&pdf_set)->default_value("CT10nlo"),
        "LHAPDF set name")
+      ("tree-name", po::value(&tree_name)->default_value("t3"),
+       "change ntuple TTree name")
       ("num-ent,n", po::value<pair<Long64_t,Long64_t>>(&num_ent),
        "process only this many entries,\nnum or first:num")
       ("old-bh", po::bool_switch(&old_bh),
@@ -92,23 +94,23 @@ int main(int argc, char** argv)
     po::store(po::parse_command_line(argc, argv, all_opt), vm);
     if (argc == 1 || vm.count("help")) {
       cout << all_opt << endl;
-      exit(0);
+      return 0;
     }
     po::notify(vm);
   }
   catch(exception& e) {
     cerr << "\033[31mError: " <<  e.what() <<"\033[0m"<< endl;
-    exit(1);
+    return 1;
   }
   // END OPTIONS ****************************************************
 
   // Open input event file
   TFile *fin = new TFile(BH_file.c_str(),"READ");
-  if (fin->IsZombie()) exit(1);
+  if (fin->IsZombie()) return 1;
 
   cout << "Input BH event file: " << fin->GetName() << endl;
 
-  TTree *tin = (TTree*)fin->Get("t3");
+  TTree *tin = (TTree*)fin->Get(tree_name.c_str());
 
   // Find number of entries to process
   if (num_ent.second>0) {
@@ -116,7 +118,7 @@ int main(int argc, char** argv)
     if (need_ent>tin->GetEntries()) {
       cerr << "Fewer entries in BH ntuple (" << tin->GetEntries()
          << ") then requested (" << need_ent << ')' << endl;
-      exit(1);
+      return 1;
     }
   } else num_ent.second = tin->GetEntries();
 
@@ -131,7 +133,7 @@ int main(int argc, char** argv)
     else if (BH_file.find("vsub")!=string::npos) event.SetPart('I');
     else {
       cerr << "\033[31mCannot determine part type from file name\033[0m" << endl;
-      exit(1);
+      return 1;
     }
 
     const size_t jpos = BH_file.find_first_of('j');
@@ -145,11 +147,11 @@ int main(int argc, char** argv)
 
       } else {
         cerr << "\033[31mCannot determine number of jets from file name\033[0m" << endl;
-        exit(1);
+        return 1;
       }
     } else {
       cerr << "\033[31mCannot determine number of jets from file name\033[0m" << endl;
-      exit(1);
+      return 1;
     }
   }
 
@@ -160,7 +162,7 @@ int main(int argc, char** argv)
 
   // Open output weights file
   TFile *fout = new TFile(weights_file.c_str(),"recreate");
-  if (fout->IsZombie()) exit(1);
+  if (fout->IsZombie()) return 1;
 
   cout << "Output weights file: " << fout->GetName() << endl;
 
@@ -190,15 +192,15 @@ int main(int argc, char** argv)
   // Check that nodes exist
   if (!energies_node) {
     cerr << "No energies node in XML config file" << endl;
-    exit(1);
+    return 1;
   }
   if (!scales_node) {
     cerr << "No scales node in XML config file" << endl;
-    exit(1);
+    return 1;
   }
   if (!weights_node) {
     cerr << "No weights node in XML config file" << endl;
-    exit(1);
+    return 1;
   }
 
   if (format_node) {
@@ -228,7 +230,7 @@ int main(int argc, char** argv)
       mu[name] = new mu_ren_default();
     else {
       cerr << "Warning: unrecognized energy definition: " << tag_name << endl;
-      exit(1);
+      return 1;
     }
   }
 
