@@ -12,12 +12,14 @@ db="$dir/ntuples.db"
 
 #####################################################################
 
-for set in `sqlite3 $db "SELECT bh_id, dir, file FROM wt WHERE pdf = 'MMHT2014nlo'"`; do
+for set in `sqlite3 $db "SELECT bh.id, wt.dir, wt.file FROM bh JOIN wt ON bh.id = wt.bh_id WHERE particle = 'A'"`; do
 
 while [ "`condor_q ivanp | tail -1 | sed 's/\([0-9]*\) jobs.*/\1/'`" -ge "$max_conc" ]; do sleep 1800; done
 
 arr=(`echo $set | tr '|' ' '`)
 wt="${arr[1]}/${arr[2]}"
+
+mkdir -p ${arr[1]}
 
 if [ -a "$wt" ]; then
   echo "."
@@ -29,7 +31,7 @@ echo $name
 
 bh=`sqlite3 -separator '/' $db "SELECT dir, file FROM bh WHERE id = ${arr[0]}"`
 
-cmd="$ana/bin/reweigh --bh=\"$bh\" -c \"$ana/config/rew_Ht2.xml\" -o \"$wt\" --pdf=\"MMHT2014nlo68clas118\""
+cmd="$ana/bin/reweigh --bh=\"$bh\" -c \"$ana/config/rew_Ht2.xml\" -o \"$wt\" --pdf=\"CT10nlo\" --tree-name=\"BHSntuples\""
 
 # Form temporary wrapper script
 

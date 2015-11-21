@@ -15,7 +15,7 @@ cur.execute("select id, particle, njets, energy, part, sid, dset FROM bh")
 
 pnj = ""
 
-for scales in ['HT2-mH-cmp']:
+for scales in ['HT2-unc']:
   for pdf in ['CT10nlo']:
 
     for bh in cur.fetchall():
