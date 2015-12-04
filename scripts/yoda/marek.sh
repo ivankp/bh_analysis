@@ -26,10 +26,21 @@ s|\([/=]\)jets_tau_sum|\1sum_tau_jet|;
 s|\([/=]\)\(.*\)jjfb_|\1\2jjdy_|;
 s|\([/=]\)jj_loose|\1loose|;
 /_\(excl\|incl\)$/!s|\([/=]H_\?j\+.*\)|\1_incl|;
-/_\(excl\|incl\)$/!s|\([/=]jet[0-9]*_.*\)|\1_excl|;
+s/\(jet[0-9]_\(pT\|mass\)\)$/\1_incl/;
 s/\([\/=]\)\(.*\)_d\(phi\|y\)/\1delta\3_\2/;
-s/\([\/=]\)delta\(phi\|y\)_H_jj/\1delta\2_Hjj/;
-/[\/=]delta/s/\(H\?jj\)\(pT\)/\1/
+s/\([\/=]\)deltaphi_H_jj/\1deltaphi_Hjj/;
+/[\/=]delta/s/\(H\?jj\)\(pT\)/\1/;
+s/jets_HT/HT_jets/;
+s/jets_N_\(excl\|incl\)/NJet_\1_30/;
+s/H_jjdy_phi2_incl/deltaphi2/;
+s/H_jj_phi2_incl/deltaphi2_jjpT/;
+s/Hjjdy_mass_incl/H_dijet_mass_VBF/;
+s/HjjpT_mass_incl/H_dijet_mass/;
+s/deltaphi_jj$/deltaphi_jj_incl/;
+s/deltaphi_jj_2j_excl/deltaphi_jj_excl/;
+s/deltay_H_jj_incl/deltay_H_jj/;
+s/HjjpT_mass_incl/H_dijet_mass/;
+s/jjpT_mass/dijet_mass/
 ' $fout
 done
 
