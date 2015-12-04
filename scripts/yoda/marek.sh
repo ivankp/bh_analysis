@@ -27,7 +27,7 @@ s|\([/=]\)\(.*\)jjfb_|\1\2jjdy_|;
 s|\([/=]\)jj_loose|\1loose|;
 /_\(excl\|incl\)$/!s|\([/=]H_\?j\+.*\)|\1_incl|;
 s/\(jet[0-9]_\(pT\|mass\)\)$/\1_incl/;
-s/\([\/=]\)\(.*\)_d\(phi\|y\)/\1delta\3_\2/;
+s/\([\/=]\)\([^\/=]*\)_d\(phi\|y\)/\1delta\3_\2/;
 s/\([\/=]\)deltaphi_H_jj/\1deltaphi_Hjj/;
 /[\/=]delta/s/\(H\?jj\)\(pT\)/\1/;
 s/jets_HT/HT_jets/;
