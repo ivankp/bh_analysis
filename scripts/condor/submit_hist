@@ -26,7 +26,7 @@ for set in `sqlite3 $db "
   SELECT distinct particle, njets, energy, part, wt.scales, wt.pdf
   FROM bh
   JOIN wt ON bh.id = wt.bh_id
-  WHERE particle = 'A' and part = 'I'
+  WHERE particle = 'A' and njets = 2
 "`; do
 
 arr=(`echo $set | tr '|' ' '`)
