@@ -87,6 +87,7 @@ int main(int argc, char** argv)
   float of_lim;
   bool of_lim_set = false;
   unsigned sigma_prec;
+  bool logy;
 
   try {
     // General Options ------------------------------------
@@ -99,12 +100,14 @@ int main(int argc, char** argv)
      "output pdf plots")
     ("title,t", po::value<string>(&title),
      "string appended to each title")
-    ("label,l", po::value<vector<string>>(&labels),
+    ("label", po::value<vector<string>>(&labels),
      "add a label")
     ("sigma-prec", po::value<unsigned>(&sigma_prec)->default_value(3),
      "number of significant digits in cross section")
     ("overflow", po::value<float>(&of_lim),
      "print under- and overflow messages on histograms above the limit")
+    ("logy,l", po::bool_switch(&logy),
+     "set vertical axis logarithmic")
     ;
 
     po::positional_options_description pos;
@@ -172,6 +175,7 @@ int main(int argc, char** argv)
 
   // Draw histograms
   TCanvas canv;
+  if (logy) canv.SetLogy();
   canv.SaveAs((fout_name+'[').c_str());
 
   for (auto h_cent : central) {
