@@ -87,7 +87,7 @@ int main(int argc, char** argv)
   float of_lim;
   bool of_lim_set = false;
   unsigned sigma_prec;
-  bool logy;
+  bool logy, ratio;
 
   try {
     // General Options ------------------------------------
@@ -108,6 +108,8 @@ int main(int argc, char** argv)
      "print under- and overflow messages on histograms above the limit")
     ("logy,l", po::bool_switch(&logy),
      "set vertical axis logarithmic")
+    ("ratio", po::bool_switch(&ratio),
+     "divide everything by the central distribution")
     ;
 
     po::positional_options_description pos;
@@ -272,6 +274,26 @@ int main(int argc, char** argv)
       scales_lo[i] /= unit;
     }
 
+    if (ratio) {
+      for (size_t i=0; i<nbins; ++i) {
+        if (cent[i]!=0.) {
+          pdf_lo   [i] /= cent[i];
+          pdf_hi   [i] /= cent[i];
+          scales_hi[i] /= cent[i];
+          scales_lo[i] /= cent[i];
+          cent     [i] = 1.;
+        } else {
+          pdf_lo   [i] = 0.;
+          pdf_hi   [i] = 0.;
+          scales_hi[i] = 0.;
+          scales_lo[i] = 0.;
+        }
+      }
+      for (size_t i=0; i<nbins+2; ++i) {
+        h_cent->SetBinContent(i,1);
+      }
+    }
+
     // Draw *********************************************************
     TLine zero;
     zero.SetLineStyle(7);
@@ -399,7 +421,7 @@ int main(int argc, char** argv)
       pdf_lbl->SetTextSize(0.035);
       pdf_lbl->Draw();
     }
-    
+
     vector<unique_ptr<TLatex>> lbl;
     for (const string& lbl_name : labels) {
       lbl.emplace_back( new TLatex(0.73,lbl_y-=0.045, lbl_name.c_str()) );
