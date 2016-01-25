@@ -7,6 +7,7 @@
 #include <set>
 #include <cmath>
 #include <memory>
+#include <algorithm>
 
 #include <boost/program_options.hpp>
 #include <boost/tokenizer.hpp>
@@ -83,7 +84,7 @@ int main(int argc, char** argv)
 {
   // START OPTIONS **************************************************
   string fin_name, fout_name, title;
-  vector<string> labels;
+  vector<string> labels, exclude;
   float of_lim;
   bool of_lim_set = false;
   unsigned sigma_prec;
@@ -94,22 +95,24 @@ int main(int argc, char** argv)
     po::options_description all_opt("Options");
     all_opt.add_options()
     ("help,h", "produce help message")
-    ("input,i", po::value<string>(&fin_name)->required(),
+    ("input,i", po::value(&fin_name)->required(),
      "*input files with histograms")
-    ("output,o", po::value<string>(&fout_name),
+    ("output,o", po::value(&fout_name),
      "output pdf plots")
-    ("title,t", po::value<string>(&title),
+    ("title,t", po::value(&title),
      "string appended to each title")
-    ("label", po::value<vector<string>>(&labels),
+    ("label", po::value(&labels),
      "add a label")
-    ("sigma-prec", po::value<unsigned>(&sigma_prec)->default_value(3),
+    ("sigma-prec", po::value(&sigma_prec)->default_value(3),
      "number of significant digits in cross section")
-    ("overflow", po::value<float>(&of_lim),
+    ("overflow", po::value(&of_lim),
      "print under- and overflow messages on histograms above the limit")
     ("logy,l", po::bool_switch(&logy),
      "set vertical axis logarithmic")
     ("ratio", po::bool_switch(&ratio),
      "divide everything by the central distribution")
+    ("exclude-dir", po::value(&exclude),
+     "exclude directories with this in title")
     ;
 
     po::positional_options_description pos;
@@ -157,9 +160,22 @@ int main(int argc, char** argv)
   vector<TDirectory*> dirs;
   dirs.reserve(16);
   get_all(fin,dirs);
-  for (auto d : dirs) {
+  for (auto a=dirs.begin(); a!=dirs.end();) { // --exclude-dir
+    static boost::char_separator<char> sep("_");
+    const string dir_name((*a)->GetName());
+    const tokenizer tok(dir_name,sep);
+    bool contains = false;
+    for (auto& t : tok) {
+      if ((contains = (find(exclude.begin(),exclude.end(),t)!=exclude.end()) )) {
+        dirs.erase(a);
+        break;
+      }
+    }
+    if (!contains) ++a;
+  }
+  for (auto d : dirs) { // Collect PDF's JetAlgs' names
     const string dir_name(d->GetName());
-    cout << dir_name << endl;
+    cout << dir_name << endl; // print directories' names
     static boost::char_separator<char> sep("_");
     tokenizer tok(dir_name,sep);
     for (auto t : tok) {
