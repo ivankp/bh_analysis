@@ -35,7 +35,7 @@ using namespace std;
 namespace po = boost::program_options;
 
 #define test(var) \
-cout <<"\033[36m"<< #var <<"\033[0m"<< " = " << var << endl;
+  std::cout <<"\033[36m"<< #var <<"\033[0m"<< " = " << var << std::endl;
 
 namespace std {
   template<typename A, typename B>
