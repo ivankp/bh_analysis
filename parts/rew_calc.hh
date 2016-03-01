@@ -46,6 +46,14 @@ public:
   virtual ~mu_fHt_Higgs() noexcept { }
 };
 
+class mu_fEt_gamma: public mu_fcn {
+  double fEt;
+public:
+  mu_fEt_gamma(double fEt) noexcept;
+  virtual double mu() const noexcept;
+  virtual ~mu_fEt_gamma() noexcept { }
+};
+
 class mu_fac_default: public mu_fcn {
 public:
   mu_fac_default() noexcept;

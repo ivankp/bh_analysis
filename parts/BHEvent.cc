@@ -1,6 +1,7 @@
 #include "BHEvent.hh"
 
 #include <cmath>
+#include <stdexcept>
 
 #include <TTree.h>
 
@@ -97,21 +98,32 @@ void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
 void BHEvent::SetPart(Char_t part) { this->part[0] = part; }
 void BHEvent::SetAlphasPower(Char_t n) { this->alphas_power = n; }
 
-template<typename T> constexpr T sq(T x) { return x*x; }
+template <typename T> inline T sq(T x) noexcept { return x*x; }
+template <typename T, typename... TT>
+inline T sq(T x, TT... xx) noexcept { return sq(x)+sq(xx...); }
 
 Double_t BHEvent::Ht() const noexcept {
   Double_t _Ht = 0.;
-  for (Int_t i=0;i<nparticle;++i)
+  for (Int_t i=0; i<nparticle; ++i)
     _Ht += sqrt( sq(px[i]) + sq(py[i]) );
   return _Ht;
 }
 
 Double_t BHEvent::Ht_Higgs() const noexcept {
   Double_t _Ht = 0.;
-  for (Int_t i=0;i<nparticle;++i) {
-    Double_t pt2 = sq(px[i]) + sq(py[i]);
+  for (Int_t i=0; i<nparticle; ++i) {
+    Double_t pt2 = sq(px[i],py[i]);
     if (kf[i]==25) pt2 += sq(125.); // mH^2
     _Ht += sqrt(pt2);
   }
   return _Ht;
 }
+
+Double_t BHEvent::Et_gamma() const noexcept {
+  // Return Et of the first photon we come across
+  for (Int_t i=0; i<nparticle; ++i)
+    if (kf[i]==22) return sq(px[i],py[i]);
+  // No photon found
+  throw std::runtime_error("Cannot compute Et_gamma for event without photon");
+}
+

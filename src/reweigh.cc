@@ -222,6 +222,8 @@ int main(int argc, char** argv)
       mu[name] = new mu_fHt(atof(get_attr(node,"frac")));
     else if (!strcmp(tag_name,"Ht_Higgs"))
       mu[name] = new mu_fHt_Higgs(atof(get_attr(node,"frac")));
+    else if (!strcmp(tag_name,"Et_gamma"))
+      mu[name] = new mu_fEt_gamma(atof(get_attr(node,"frac")));
     else if (!strcmp(tag_name,"fixed"))
       mu[name] = new mu_fixed(atof(get_attr(node,"val")));
     else if (!strcmp(tag_name,"fac_default"))

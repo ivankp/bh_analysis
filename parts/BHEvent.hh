@@ -36,6 +36,7 @@ public:
 
   Double_t Ht() const noexcept;
   Double_t Ht_Higgs() const noexcept;
+  Double_t Et_gamma() const noexcept;
 
   enum select_t { all, kinematics, reweighting, cross_section };
 
