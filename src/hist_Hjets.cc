@@ -47,11 +47,12 @@ template<typename T> inline bool between(T a, T x, T b) noexcept {
   return ( (a<=x) && (x<=b) );
 }
 
-inline Double_t dphi(Double_t phi1, Double_t phi2) noexcept {
-  return fmod( abs(phi1 - phi2), M_PI);
+Double_t dphi(Double_t phi1, Double_t phi2) noexcept {
+  const Double_t _dphi= abs(phi1-phi2);
+  return ( _dphi > M_PI ? (M_PI*2)-_dphi : _dphi );
 }
 
-inline Double_t fphi2(const TLorentzVector& b, const TLorentzVector& f) noexcept {
+Double_t fphi2(const TLorentzVector& b, const TLorentzVector& f) noexcept {
   const Double_t bx=b.Px(), by=b.Py(), fx=f.Px(), fy=f.Py();
 
   const Double_t phi2 = acos( ( bx*fx+by*fy ) /
