@@ -1,4 +1,4 @@
-# BlackHat ntuple analysis
+# BlackHat Ntuples Analysis
 * Author: Ivan Pogrebnyak, [MSU](http://www.pa.msu.edu/), ATLAS
 * Repository: https://github.com/ivankp/bh_analysis.git
 * Source (zip): https://github.com/ivankp/bh_analysis/archive/master.zip
