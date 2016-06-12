@@ -52,28 +52,6 @@ void usePDFset(const std::string& setname) {
 }
 
 //-----------------------------------------------
-// Function classes to get scales values
-//-----------------------------------------------
-
-mu_fixed::mu_fixed(double mu) noexcept : _mu(mu) { }
-double mu_fixed::mu() const noexcept { return _mu; }
-
-mu_fHt::mu_fHt(double fHt) noexcept : fHt(fHt) { }
-double mu_fHt::mu() const noexcept { return fHt*event.Ht(); }
-
-mu_fHt_Higgs::mu_fHt_Higgs(double fHt) noexcept : fHt(fHt) { }
-double mu_fHt_Higgs::mu() const noexcept { return fHt*event.Ht_Higgs(); }
-
-mu_fEt_gamma::mu_fEt_gamma(double fEt) noexcept : fEt(fEt) { }
-double mu_fEt_gamma::mu() const noexcept { return fEt*event.Et_gamma(); }
-
-mu_fac_default::mu_fac_default() noexcept { }
-double mu_fac_default::mu() const noexcept { return event.fac_scale; }
-
-mu_ren_default::mu_ren_default() noexcept { }
-double mu_ren_default::mu() const noexcept { return event.ren_scale; }
-
-//-----------------------------------------------
 // Reweighting computation
 //-----------------------------------------------
 

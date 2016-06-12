@@ -18,53 +18,49 @@ void usePDFset(const std::string& setname);
 
 class mu_fcn {
 public:
-  virtual double mu() const noexcept =0;
+  virtual double mu() const =0;
   virtual ~mu_fcn() noexcept { }
 };
 
 class mu_fixed: public mu_fcn {
   double _mu;
 public:
-  mu_fixed(double mu) noexcept;
-  virtual double mu() const noexcept;
+  mu_fixed(double mu) noexcept : _mu(mu) { }
+  virtual double mu() const noexcept { return _mu; }
   virtual ~mu_fixed() noexcept { }
 };
 
-class mu_fHt: public mu_fcn {
-  double fHt;
+class mu_frac: public mu_fcn {
+protected:
+  double frac;
 public:
-  mu_fHt(double fHt) noexcept;
-  virtual double mu() const noexcept;
-  virtual ~mu_fHt() noexcept { }
+  mu_frac(double frac) noexcept : frac(frac) { }
+  virtual ~mu_frac() noexcept { }
 };
 
-class mu_fHt_Higgs: public mu_fcn {
-  double fHt;
-public:
-  mu_fHt_Higgs(double fHt) noexcept;
-  virtual double mu() const noexcept;
-  virtual ~mu_fHt_Higgs() noexcept { }
-};
+#define mu_frac_class(fcn_name) \
+  class mu_f##fcn_name: public mu_frac { \
+  public: \
+    using mu_frac::mu_frac; \
+    virtual double mu() const noexcept(noexcept(event.fcn_name())) \
+      { return frac*event.fcn_name(); } \
+    virtual ~mu_f##fcn_name() noexcept { } \
+  };
 
-class mu_fEt_gamma: public mu_fcn {
-  double fEt;
-public:
-  mu_fEt_gamma(double fEt) noexcept;
-  virtual double mu() const noexcept;
-  virtual ~mu_fEt_gamma() noexcept { }
-};
+mu_frac_class(Ht);
+mu_frac_class(Ht_Higgs);
+mu_frac_class(Ht_lnu);
+mu_frac_class(Et_gamma);
 
 class mu_fac_default: public mu_fcn {
 public:
-  mu_fac_default() noexcept;
-  virtual double mu() const noexcept;
+  virtual double mu() const noexcept { return event.fac_scale; }
   virtual ~mu_fac_default() noexcept { }
 };
 
 class mu_ren_default: public mu_fcn {
 public:
-  mu_ren_default() noexcept;
-  virtual double mu() const noexcept;
+  virtual double mu() const noexcept { return event.ren_scale; }
   virtual ~mu_ren_default() noexcept { }
 };
 

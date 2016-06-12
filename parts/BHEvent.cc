@@ -102,10 +102,14 @@ template <typename T> inline T sq(T x) noexcept { return x*x; }
 template <typename T, typename... TT>
 inline T sq(T x, TT... xx) noexcept { return sq(x)+sq(xx...); }
 
+template <typename T1, typename T2> inline bool in(T1 x, T2 a) { return x==a; }
+template <typename T1, typename T2, typename... TT>
+inline bool in(T1 x, T2 a, TT... bb) { return in(x,a) || in(x,bb...); }
+
 Double_t BHEvent::Ht() const noexcept {
   Double_t _Ht = 0.;
   for (Int_t i=0; i<nparticle; ++i)
-    _Ht += sqrt( sq(px[i]) + sq(py[i]) );
+    _Ht += sqrt( sq(px[i],py[i]) );
   return _Ht;
 }
 
@@ -119,11 +123,37 @@ Double_t BHEvent::Ht_Higgs() const noexcept {
   return _Ht;
 }
 
-Double_t BHEvent::Et_gamma() const noexcept {
+Double_t BHEvent::Ht_lnu() const {
+  Double_t pt2 = 0.;
+  bool found_l = false, found_nu = false;
+  Double_t lnu[4] = {0.,0.,0.,0.};
+  for (Int_t i=0; i<nparticle; ++i) {
+    if (!found_l && in(abs(kf[i]),11,13,15)) {
+      found_l = true;
+      lnu[0] += px[i];
+      lnu[1] += py[i];
+      lnu[2] += pz[i];
+      lnu[3] += E [i];
+    } else if (!found_nu && in(abs(kf[i]),12,14,16)) {
+      found_nu = true;
+      lnu[0] += px[i];
+      lnu[1] += py[i];
+      lnu[2] += pz[i];
+      lnu[3] += E [i];
+    } else {
+      pt2 += sq(px[i],py[i]);
+    }
+  }
+  if (found_l && found_nu) pt2 += sq(lnu[0],lnu[1],lnu[2],lnu[3]);
+  else throw std::runtime_error(
+    "Cannot compute Ht_lnu for event without lepton and neutrino");
+  return sqrt(pt2);
+}
+
+Double_t BHEvent::Et_gamma() const {
   // Return Et of the first photon we come across
   for (Int_t i=0; i<nparticle; ++i)
     if (kf[i]==22) return sq(px[i],py[i]);
   // No photon found
   throw std::runtime_error("Cannot compute Et_gamma for event without photon");
 }
-
