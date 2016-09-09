@@ -25,7 +25,7 @@
 }
 
 H_pT {
-  Bins: 25 0 500;
+  Bins: 35 0 700;
 }
 
 H_mass {
@@ -33,15 +33,15 @@ H_mass {
 }
 
 jet\d_pT(?:_.*)? {
-  Bins: 30 0 300;
+  Bins: 50 0 500;
 }
 
 jets_HT {
-  Bins: 25 0 500;
+  Bins: 35 0 700;
 }
 
 H1j_pT {
-  Bins: 30 0 210;
+  Bins: 70 0 350;
 }
 
 H2j_pT {
@@ -65,7 +65,7 @@ jet4_mass {
 }
 
 jet(\d|s)_tau(?:_.*)? {
-  Bins: 25 0 150;
+  Bins: 30 0 180;
 }
 
 .*_N_.* {
@@ -73,11 +73,11 @@ jet(\d|s)_tau(?:_.*)? {
 }
 
 jj[^_]*_mass {
-  Bins: 35 0 700;
+  Bins: 50 0 1000;
 }
 
 Hjj[^_]*_mass {
-  Bins: 30 150 2000;
+  Bins: 50 150 2650;
 }
 
 AA_pTt {

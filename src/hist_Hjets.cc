@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <array>
 #include <unordered_map>
 #include <utility>
 #include <stdexcept>
@@ -33,6 +34,9 @@
 #include "timed_counter.hh"
 #include "catstr.hh"
 #include "senum.hh"
+#include "nest.hh"
+
+#include "dphi.hh"
 
 #define test(var) \
   cout <<"\033[36m"<< #var <<"\033[0m"<< " = " << var << endl;
@@ -45,11 +49,6 @@ template<typename T> inline T sq(T x) noexcept { return x*x; }
 template<typename T> inline bool between(T a, T x, T b) noexcept {
   if (b < a) swap(a,b);
   return ( (a<=x) && (x<=b) );
-}
-
-Double_t dphi(Double_t phi1, Double_t phi2) noexcept {
-  const Double_t _dphi= abs(phi1-phi2);
-  return ( _dphi > M_PI ? (M_PI*2)-_dphi : _dphi );
 }
 
 Double_t fphi2(const TLorentzVector& b, const TLorentzVector& f) noexcept {
@@ -168,8 +167,7 @@ int main(int argc, char** argv)
     if (vm.count("sj")) sj_given = true;
     if (vm.count("wt")) wt_given = true;
     if (AAntuple && vm.count("AA-mass-cut")) apply_AA_mass_cut = true;
-  }
-  catch(exception& e) {
+  } catch(exception& e) {
     cerr << "\033[31mError: " <<  e.what() <<"\033[0m"<< endl;
     return 1;
   }
@@ -359,7 +357,7 @@ int main(int argc, char** argv)
 
   fout->cd();
 
-  const size_t njetsR = njets + 1;
+  const size_t njetsR = njets + 1; // number of jest in Real part
 
   // Book histograms ************************************************
   #define h_(name) hist_wt h_##name(#name);
@@ -436,16 +434,16 @@ int main(int argc, char** argv)
   h_jj(jjpT_N_jhj_incl) h_jj(jjfb_N_jhj_incl)
   h_jj(jjpT_N_jhj_excl) h_jj(jjfb_N_jhj_excl)
 
-  const size_t ndy = 6;
+  constexpr unsigned ndy = 6;
 
-  vector<vector<hist_wt>> h_jet_pT_jjpT(njetsR);
+  nest_t<vector,2,hist_wt> h_jet_pT_jjpT(njetsR);
   if (njets>1) for (size_t j=0; j<njetsR; ++j) {
     h_jet_pT_jjpT[j].reserve(ndy);
     for (size_t i=0; i<ndy; ++i)
       h_jet_pT_jjpT[j].emplace_back(cat("jet",j+1,"_pT_jjpT_mindy",i+1));
   }
 
-  vector<vector<hist_wt>> h_jet_pT_jjfb(njetsR);
+  nest_t<vector,2,hist_wt> h_jet_pT_jjfb(njetsR);
   if (njets>1) for (size_t j=0; j<njetsR; ++j) {
     h_jet_pT_jjfb[j].reserve(ndy);
     for (size_t i=0; i<ndy; ++i)
@@ -456,6 +454,15 @@ int main(int argc, char** argv)
 
   h_opt(jjpT_j_dy_veto, njets>2)
   h_opt(jjfb_j_dy_veto, njets>2)
+
+  constexpr unsigned ndphi = 6;
+  nest_t<vector,2,hist_wt> h_H_pT_jjfb_dphi_dy(ndphi);
+  if (njets>1) for (unsigned idphi=0; idphi<ndphi; ++idphi) {
+    h_jet_pT_jjfb[idphi].reserve(ndy);
+    for (unsigned idy=0; idy<ndy; ++idy)
+      h_jet_pT_jjfb[idphi].emplace_back(cat(
+        "h_H_pT_jjfb_dphi",idphi+1,"pi",ndphi,"_dy",idy+1));
+  }
 
   // Reading entries from the input TChain **************************
   Long64_t num_selected = 0, num_events = 0;
@@ -811,7 +818,7 @@ int main(int argc, char** argv)
       TLorentzVector vsumf(0.,0.,0.,0.);
       TLorentzVector vsumb(0.,0.,0.,0.);
 
-      Double_t f_nonzero = false, b_nonzero = false;
+      bool f_nonzero = false, b_nonzero = false;
       for (const auto& j : jets) {
         if (j.y > H_y) { vsumf += j.p; f_nonzero = true; }
         else           { vsumb += j.p; b_nonzero = true; }
@@ -830,6 +837,10 @@ int main(int argc, char** argv)
       }
 
       h_H_jjfb_phi2.Fill(phi2);
+
+      h_H_pT_jjfb_dphi_dy
+        [ floor(jjfb_dphi*ndphi) ]
+        [ floor(abs(jjfb_dy))    ].Fill(H_pT);
 
     } // END if (njets>1)
 

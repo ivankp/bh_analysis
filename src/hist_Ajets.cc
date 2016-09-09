@@ -32,6 +32,8 @@
 #include "timed_counter.hh"
 #include "catstr.hh"
 
+#include "dphi.hh"
+
 #define test(var) \
   cout <<"\033[36m"<< #var <<"\033[0m"<< " = " << var << endl;
 
@@ -43,11 +45,6 @@ template<typename T> inline T sq(T x) noexcept { return x*x; }
 template<typename T> inline bool between(T a, T x, T b) noexcept {
   if (b < a) swap(a,b);
   return ( (a<=x) && (x<=b) );
-}
-
-Double_t dphi(Double_t phi1, Double_t phi2) noexcept {
-  const Double_t _dphi = abs(phi1-phi2);
-  return ( _dphi > M_PI ? (M_PI*2)-_dphi : _dphi );
 }
 
 Double_t fphi2(const TLorentzVector& b, const TLorentzVector& f) noexcept {

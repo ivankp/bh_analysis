@@ -102,7 +102,9 @@ lib/cross_section_bh.o: parts/BHEvent.hh
 
 lib/cross_section.o: tools/int_range.hh tools/real_range.hh tools/timed_counter.hh parts/BHEvent.hh parts/weight.hh parts/fj_jetdef.hh
 
-$(HIST_OBJ): tools/csshists.hh tools/int_range.hh tools/real_range.hh tools/timed_counter.hh tools/catstr.hh tools/senum.hh parts/BHEvent.hh parts/SJClusterAlg.hh parts/weight.hh parts/hist_wt.hh parts/fj_jetdef.hh
+$(HIST_OBJ): tools/csshists.hh tools/int_range.hh tools/real_range.hh tools/timed_counter.hh tools/catstr.hh tools/senum.hh parts/BHEvent.hh parts/SJClusterAlg.hh parts/weight.hh parts/hist_wt.hh parts/fj_jetdef.hh parts/dphi.hh
+
+lib/hist_Hjets.o: parts/nest.hh
 
 # EXE dependencies ##################################################
 bin/inspect_bh: lib/BHEvent.o
