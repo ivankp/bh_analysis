@@ -458,9 +458,9 @@ int main(int argc, char** argv)
   constexpr unsigned ndphi = 6;
   nest_t<vector,2,hist_wt> h_H_pT_jjfb_dphi_dy(ndphi);
   if (njets>1) for (unsigned idphi=0; idphi<ndphi; ++idphi) {
-    h_jet_pT_jjfb[idphi].reserve(ndy);
+    h_H_pT_jjfb_dphi_dy[idphi].reserve(ndy);
     for (unsigned idy=0; idy<ndy; ++idy)
-      h_jet_pT_jjfb[idphi].emplace_back(cat(
+      h_H_pT_jjfb_dphi_dy[idphi].emplace_back(cat(
         "h_H_pT_jjfb_dphi",idphi+1,"pi",ndphi,"_dy",idy+1));
   }
 
@@ -838,9 +838,11 @@ int main(int argc, char** argv)
 
       h_H_jjfb_phi2.Fill(phi2);
 
-      h_H_pT_jjfb_dphi_dy
-        [ floor(jjfb_dphi*ndphi) ]
-        [ floor(abs(jjfb_dy))    ].Fill(H_pT);
+      unsigned jjfb_dy_bin = floor(abs(jjfb_dy));
+      if (jjfb_dy_bin >= ndy) jjfb_dy_bin = ndy-1;
+      unsigned jjfb_dphi_bin = floor(jjfb_dphi*ndphi/M_PI);
+      if (jjfb_dphi_bin >= ndphi) jjfb_dphi_bin = ndphi-1;
+      h_H_pT_jjfb_dphi_dy[jjfb_dphi_bin][jjfb_dy_bin].Fill(H_pT);
 
     } // END if (njets>1)
 

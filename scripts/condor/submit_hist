@@ -1,11 +1,11 @@
 #!/bin/bash
 
-exe=/home/ivanp/work/bh_analysis/bin/hist_Ajets
+exe=/home/ivanp/work/bh_analysis/bin/hist_Hjets
 dir=/msu/data/t3work2/ivanp
 out=$dir/condor
 histdir=$dir/hist/raw
 
-group_size=1 # 50
+group_size=50
 
 mkdir -p $out
 mkdir -p $histdir
@@ -26,7 +26,7 @@ for set in `sqlite3 $db "
   SELECT distinct particle, njets, energy, part, wt.scales, wt.pdf
   FROM bh
   JOIN wt ON bh.id = wt.bh_id
-  WHERE particle = 'A' and njets = 2
+  WHERE particle = 'H' and wt.pdf = 'CT10nlo' and wt.scales = 'HT2-unc' and energy = 13 and njets = 2
 "`; do
 
 arr=(`echo $set | tr '|' ' '`)
@@ -70,7 +70,7 @@ echo $name
 
 # Form arguments
 
-args="-o $histdir/$name.root -j ${arr[1]} -c $jalg --cache=500 --tree-name=\"BHSntuples\""
+args="-o $histdir/$name.root -j ${arr[1]} -c $jalg --cache=500 --tree-name=\"t3\""
 
 if [ "${arr[0]}" == "AA" ]; then
   args="$args --AA"
