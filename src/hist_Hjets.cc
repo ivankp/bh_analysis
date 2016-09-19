@@ -44,10 +44,15 @@
 using namespace std;
 namespace po = boost::program_options;
 
-template<typename T> inline T sq(T x) noexcept { return x*x; }
+template <typename T> [[ gnu::const ]]
+inline T sq(T x) noexcept { return x*x; }
+template <typename T, typename... TT> [[ gnu::const ]]
+inline T sq(T x, TT... xx) noexcept { return sq(x)+sq(xx...); }
 
-template<typename T> inline bool between(T a, T x, T b) noexcept {
-  if (b < a) swap(a,b);
+
+template <typename T> [[ gnu::const ]]
+inline bool between(T a, T x, T b) noexcept {
+  if (__builtin_expect(b<a,0)) swap(a,b);
   return ( (a<=x) && (x<=b) );
 }
 
@@ -62,8 +67,7 @@ Double_t fphi2(const TLorentzVector& b, const TLorentzVector& f) noexcept {
 }
 
 // ******************************************************************
-struct Jet {
-private:
+class Jet {
   inline Double_t _tau(Double_t Y) noexcept {
     // need rapidity here
     return sqrt( pT*pT + mass*mass )/( 2.*cosh(y - Y) );
@@ -71,11 +75,9 @@ private:
 public:
   TLorentzVector p;
   Double_t mass, pT, y, phi, tau;
-  Jet(const TLorentzVector& _p, Double_t Y) noexcept
-  : p(_p), mass(p.M()), pT(p.Pt()), y(p.Rapidity()), phi(p.Phi()), tau(_tau(Y))
-  { }
-  Jet(const fastjet::PseudoJet& _p, Double_t Y) noexcept
-  : p(_p.px(),_p.py(),_p.pz(),_p.E()),
+  template <typename P>
+  Jet(P&& _p, Double_t Y) noexcept
+  : p(_p[0],_p[1],_p[2],_p[3]),
     mass(p.M()), pT(p.Pt()), y(p.Rapidity()), phi(p.Phi()), tau(_tau(Y))
   { }
 };
@@ -461,7 +463,14 @@ int main(int argc, char** argv)
     h_H_pT_jjfb_dphi_dy[idphi].reserve(ndy);
     for (unsigned idy=0; idy<ndy; ++idy)
       h_H_pT_jjfb_dphi_dy[idphi].emplace_back(cat(
-        "h_H_pT_jjfb_dphi",idphi+1,"pi",ndphi,"_dy",idy+1));
+        "H_pT_jjfb_dphi",idphi+1,"pi",ndphi,"_dy",idy+1));
+  }
+
+  constexpr unsigned ndR = 12;
+  vector<hist_wt> h_H_pT_jjfb_dR;
+  h_H_pT_jjfb_dR.reserve(ndR);
+  if (njets>1) for (unsigned idR=0; idR<ndphi; ++idR) {
+    h_H_pT_jjfb_dR.emplace_back(cat("H_pT_jjfb_dR",idR+1,"_2"));
   }
 
   // Reading entries from the input TChain **************************
@@ -839,10 +848,15 @@ int main(int argc, char** argv)
       h_H_jjfb_phi2.Fill(phi2);
 
       unsigned jjfb_dy_bin = floor(abs(jjfb_dy));
-      if (jjfb_dy_bin >= ndy) jjfb_dy_bin = ndy-1;
       unsigned jjfb_dphi_bin = floor(jjfb_dphi*ndphi/M_PI);
-      if (jjfb_dphi_bin >= ndphi) jjfb_dphi_bin = ndphi-1;
-      h_H_pT_jjfb_dphi_dy[jjfb_dphi_bin][jjfb_dy_bin].Fill(H_pT);
+      if (__builtin_expect(jjfb_dphi_bin >= ndphi,0))
+        jjfb_dphi_bin = ndphi - jjfb_dphi_bin;
+      if (__builtin_expect(jjfb_dy_bin < ndy,1))
+        h_H_pT_jjfb_dphi_dy[jjfb_dphi_bin][jjfb_dy_bin].Fill(H_pT);
+
+      unsigned jjfb_dR_bin = floor(jets[jb].p.DeltaR(jets[jf].p));
+      if (__builtin_expect(jjfb_dR_bin < ndR,1))
+        h_H_pT_jjfb_dR[jjfb_dR_bin].Fill(H_pT);
 
     } // END if (njets>1)
 
