@@ -469,7 +469,7 @@ int main(int argc, char** argv)
   constexpr unsigned ndR = 12;
   vector<hist_wt> h_H_pT_jjfb_dR;
   h_H_pT_jjfb_dR.reserve(ndR);
-  if (njets>1) for (unsigned idR=0; idR<ndphi; ++idR) {
+  if (njets>1) for (unsigned idR=0; idR<ndR; ++idR) {
     h_H_pT_jjfb_dR.emplace_back(cat("H_pT_jjfb_dR",idR+1,"_2"));
   }
 
@@ -847,10 +847,10 @@ int main(int argc, char** argv)
 
       h_H_jjfb_phi2.Fill(phi2);
 
-      unsigned jjfb_dy_bin = floor(abs(jjfb_dy));
       unsigned jjfb_dphi_bin = floor(jjfb_dphi*ndphi/M_PI);
       if (__builtin_expect(jjfb_dphi_bin >= ndphi,0))
-        jjfb_dphi_bin = ndphi - jjfb_dphi_bin;
+        jjfb_dphi_bin = (ndphi*2) - jjfb_dphi_bin;
+      unsigned jjfb_dy_bin = floor(abs(jjfb_dy));
       if (__builtin_expect(jjfb_dy_bin < ndy,1))
         h_H_pT_jjfb_dphi_dy[jjfb_dphi_bin][jjfb_dy_bin].Fill(H_pT);
 
