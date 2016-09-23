@@ -14,6 +14,7 @@
 
 #include "rew_calc.hh"
 #include "timed_counter.hh"
+//#include "runtime_fail.hh"
 
 using namespace std;
 namespace po = boost::program_options;
@@ -312,6 +313,14 @@ int main(int argc, char** argv)
 
     // use event id for entry number
     event.eid = ent;
+
+    /*if (!isfinite(event.weight2)) throw runtime_fail(
+      "!isfinite weight2 in ent ",ent,": ",event.weight2);
+    if (!isfinite(event.me_wgt2)) throw runtime_fail(
+      "!isfinite me_wgt2 in ent ",ent,": ",event.me_wgt2);
+    for (unsigned i=0; i<18; ++i)
+      if (!isfinite(event.usr_wgts[i])) throw runtime_fail(
+        "!isfinite usr_wgts[",i,"] in ent ",ent,": ",event.usr_wgts[i]);*/
 
     // REWEIGHTING
     for (auto& f : fac) f.second->calc();

@@ -5,6 +5,8 @@
 #include <vector>
 #include <algorithm>
 
+#include <iostream>
+
 #include "BHEvent.hh"
 
 extern BHEvent event;

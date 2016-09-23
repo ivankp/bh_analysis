@@ -12,7 +12,7 @@ db="$dir/ntuples.db"
 
 #####################################################################
 
-for set in `sqlite3 $db "SELECT bh.id, wt.dir, wt.file FROM bh JOIN wt ON bh.id = wt.bh_id WHERE particle = 'A' and njets = 2"`; do
+for set in `sqlite3 $db "SELECT bh.id, wt.dir, wt.file FROM bh JOIN wt ON bh.id = wt.bh_id WHERE dset = 10 or dset = 11 or dset = 12"`; do
 
 while [ "`condor_q ivanp | tail -1 | sed 's/\([0-9]*\) jobs.*/\1/'`" -ge "$max_conc" ]; do sleep 1800; done
 
@@ -31,7 +31,7 @@ echo $name
 
 bh=`sqlite3 -separator '/' $db "SELECT dir, file FROM bh WHERE id = ${arr[0]}"`
 
-cmd="$ana/bin/reweigh --bh=\"$bh\" -c \"$ana/config/rew_Ht2.xml\" -o \"$wt\" --pdf=\"CT10nlo\" --tree-name=\"BHSntuples\""
+cmd="$ana/bin/reweigh --bh=\"$bh\" -c \"$ana/config/rew_Ht2.xml\" -o \"$wt\" --pdf=\"CT10nlo\" --tree-name=\"t3\""
 
 # Form temporary wrapper script
 

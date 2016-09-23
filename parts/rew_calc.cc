@@ -9,9 +9,6 @@
 #include "LHAPDF/LHAPDF.h"
 #include "LHAPDF/PDFSet.h"
 
-#define test(var) \
-  cout <<"\033[36m"<< #var <<"\033[0m"<< " = " << var << endl;
-
 #define debug
 
 using namespace std;
@@ -268,6 +265,12 @@ void reweighter::stitch() const noexcept {
   // There is only one global event variable
   // so these references always points to the right place
   const char part = event.part[0];
+
+  /*for (short k=0;k<nk;++k)
+    for (short i=0;i<2;++i)
+      if (!isfinite(fac->f[k][i][0]))
+        throw runtime_fail("fac->f[",k,"][",i,"][0] = ",fac->f[k][i][0]);
+  if (!isfinite(ren->ar)) throw runtime_fail("ren->ar");*/
 
   for (short k=0;k<nk;++k) {
     s[k] = fac->m[0]; // m0

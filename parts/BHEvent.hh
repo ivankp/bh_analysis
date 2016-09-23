@@ -12,12 +12,14 @@ class BHEvent {
   TTree *tree;
 
 public:
+  using p4_t = Double_t;
+
   Int_t           eid;
   Int_t           nparticle;
-  Float_t         px[BHMAXNP]; //[nparticle]
-  Float_t         py[BHMAXNP]; //[nparticle]
-  Float_t         pz[BHMAXNP]; //[nparticle]
-  Float_t         E [BHMAXNP]; //[nparticle]
+  p4_t            px[BHMAXNP]; //[nparticle]
+  p4_t            py[BHMAXNP]; //[nparticle]
+  p4_t            pz[BHMAXNP]; //[nparticle]
+  p4_t            E [BHMAXNP]; //[nparticle]
   Int_t           kf[BHMAXNP]; //[nparticle]
   Double_t        alphas;
   Double_t        weight;
