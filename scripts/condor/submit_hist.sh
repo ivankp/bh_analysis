@@ -23,15 +23,17 @@ for VBF in none # hardest any
 do
 
 for set in `sqlite3 $db "
-  SELECT distinct particle, njets, energy, part, wt.scales, wt.pdf
+  SELECT distinct particle, njets, energy, part, wt.scales, wt.pdf, dset
   FROM bh
   JOIN wt ON bh.id = wt.bh_id
-  WHERE particle = 'H' and wt.pdf = 'CT10nlo' and wt.scales = 'HT2-unc' and energy = 13 and njets = 2
+  WHERE particle = 'H' and energy = 13 and wt.pdf = 'CT10nlo' and wt.scales = 'HT2-unc' and dset = 1
 "`; do
 
 arr=(`echo $set | tr '|' ' '`)
 arr[2]=`printf "%.0f" ${arr[2]}` # round real-valued energy
 base="${arr[0]}${arr[1]}j_${arr[2]}TeV_${arr[3]}_${arr[4]}_${jalg}_${arr[5]}"
+
+#base=$base"_mtop"
 
 if [ "$VBF" != "none" ]; then
   base=$base"_VBF$VBF"
@@ -46,7 +48,8 @@ sql="
   JOIN wt ON bh.id = wt.bh_id
   WHERE particle='${arr[0]}' and njets=${arr[1]} and
         energy=${arr[2]} and part='${arr[3]}' and
-        wt.scales='${arr[4]}' and wt.pdf='${arr[5]}'
+        wt.scales='${arr[4]}' and wt.pdf='${arr[5]}' and
+        dset=${arr[6]}
 "
 
 min=`sqlite3 $db "SELECT min(sid) $sql"`
@@ -65,6 +68,15 @@ if [ `python -c "print ($max-$end) < ($group_size*0.5)"` == "True" ]; then
 fi
 
 name="${base}_${begin}-${end}"
+
+files="`sqlite3 $db "
+  SELECT bh.dir, bh.file, wt.dir, wt.file $sql 
+  and sid >= $begin and sid <= $end
+" | sed 's/\(.*\)|\(.*\)|\(.*\)|\(.*\)/--bh=\1\/\2 --wt=\3\/\4/'`"
+
+if [ -z "$files" ]; then
+  continue
+fi
 
 echo $name
 
@@ -89,10 +101,7 @@ else
   args="$args --VBF=$VBF"
 fi
 
-args="$args `sqlite3 $db "
-  SELECT bh.dir, bh.file, wt.dir, wt.file $sql 
-  and sid >= $begin and sid <= $end
-" | sed 's/\(.*\)|\(.*\)|\(.*\)|\(.*\)/--bh=\1\/\2 --wt=\3\/\4/'`"
+args="$args $files"
 
 # Form temporary wrapper script
 

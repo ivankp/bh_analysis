@@ -12,7 +12,7 @@ class BHEvent {
   TTree *tree;
 
 public:
-  using p4_t = Double_t;
+  using p4_t = Float_t;
 
   Int_t           eid;
   Int_t           nparticle;
