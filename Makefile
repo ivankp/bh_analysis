@@ -3,7 +3,7 @@ CPP := g++
 
 DIRS := lib bin
 
-CFLAGS := -std=c++11 -Wall -O3 -Itools -Iparts
+CFLAGS := -std=c++11 -Wall -O3 -Itools -Iparts -fmax-errors=3
 
 FJ_DIR    := $(shell fastjet-config --prefix)
 FJ_CFLAGS := -I$(FJ_DIR)/include
@@ -102,7 +102,7 @@ lib/cross_section_bh.o: parts/BHEvent.hh
 
 lib/cross_section.o: tools/int_range.hh tools/real_range.hh tools/timed_counter.hh parts/BHEvent.hh parts/weight.hh parts/fj_jetdef.hh
 
-$(HIST_OBJ): tools/csshists.hh tools/int_range.hh tools/real_range.hh tools/timed_counter.hh tools/catstr.hh tools/senum.hh parts/BHEvent.hh parts/SJClusterAlg.hh parts/weight.hh parts/hist_wt.hh parts/fj_jetdef.hh parts/dphi.hh
+$(HIST_OBJ): tools/csshists.hh tools/int_range.hh tools/real_range.hh tools/timed_counter.hh tools/timed_counter2.hh tools/catstr.hh tools/senum.hh parts/BHEvent.hh parts/SJClusterAlg.hh parts/weight.hh parts/hist_wt.hh parts/fj_jetdef.hh parts/dphi.hh
 
 lib/hist_Hjets.o: parts/nest.hh
 

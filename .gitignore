@@ -23,3 +23,9 @@
 # Input files
 /data
 /ntuples
+
+# vim
+*.swp
+
+# tests and work in progress
+/test*
