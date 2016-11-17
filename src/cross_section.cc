@@ -241,7 +241,7 @@ int main(int argc, char** argv)
     bh_tree->GetEntry(ent);
 
     if (event.nparticle>BHMAXNP) {
-      cerr << "\033[31mMore particles in entry then BHMAXNP = "
+      cerr << "\033[31mMore particles in entry than BHMAXNP = "
            << BHMAXNP << "\033[0m\n"
            << "Increase array length to " << event.nparticle << endl;
       break;
