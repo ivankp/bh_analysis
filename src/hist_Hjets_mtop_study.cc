@@ -81,7 +81,7 @@ int main(int argc, char** argv)
   real_range<Double_t> AA_mass_cut;
   int_range<Long64_t> ents;
   VBF::type VBFcut;
-  bool AAntuple, quiet, strict;
+  bool AAntuple, quiet, strict, has_ncount;
   Long64_t cache_size;
 
   bool wt_given = false;
@@ -106,6 +106,8 @@ int main(int argc, char** argv)
        "  with --wt: all weights from wt files")
       ("tree-name", po::value(&tree_name)->default_value("t3"),
        "change ntuple TTree name")
+      ("has-ncount", po::bool_switch(&has_ncount),
+       "new style ntuples with ncount branch")
 
       ("njets,j", po::value<size_t>(&njets)->required(),
        "*minimum number of jets per ntuple entry")
@@ -200,7 +202,7 @@ int main(int argc, char** argv)
   // BlackHat tree branches
   BHEvent event;
   // event_ptr = &event;
-  event.SetTree(bh_tree, BHEvent::kinematics);
+  event.SetTree(bh_tree, BHEvent::kinematics, false, has_ncount);
 
   // Jet Clustering Algorithm
   unique_ptr<fastjet::JetDefinition> jet_def;
@@ -456,7 +458,7 @@ int main(int argc, char** argv)
 
     // Count number of events (not entries)
     if (prev_id!=event.eid) {
-      h_N->Fill(0.5,event.ncount);
+      h_N->Fill(0.5, has_ncount ? event.ncount : 1.);
       prev_id = event.eid;
       ++num_events;
 

@@ -10,7 +10,9 @@ inline void ActivateBranch(TTree* tree, const char* name, void* addr) noexcept {
   tree->SetBranchAddress(name, addr);
 }
 
-void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
+void BHEvent::SetTree(TTree* tree, select_t branches,
+                      bool old, bool has_ncount)
+{
   this->tree = tree;
 
   if (branches!=all) tree->SetBranchStatus("*",0);
@@ -20,12 +22,13 @@ void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
 
       ActivateBranch(tree, "id", &eid);
       ActivateBranch(tree, "nparticle", &nparticle);
-      ActivateBranch(tree, "ncount", &ncount);
       ActivateBranch(tree, "px", px);
       ActivateBranch(tree, "py", py);
       ActivateBranch(tree, "pz", pz);
       ActivateBranch(tree, "E" , E );
       ActivateBranch(tree, "kf", kf);
+      if (has_ncount)
+        ActivateBranch(tree, "ncount", &ncount);
       if (!old) { // for treating RS uncertainties properly
         ActivateBranch(tree, "part", part);
       }
@@ -59,7 +62,8 @@ void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
     case cross_section: {
 
       ActivateBranch(tree, "id", &eid);
-      ActivateBranch(tree, "ncount", &ncount);
+      if (has_ncount)
+        ActivateBranch(tree, "ncount", &ncount);
       ActivateBranch(tree, "weight2", &weight2);
 
     } break;
@@ -67,7 +71,8 @@ void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
 
       tree->SetBranchAddress("id", &eid);
       tree->SetBranchAddress("nparticle", &nparticle);
-      tree->SetBranchAddress("ncount", &ncount);
+      if (has_ncount)
+        tree->SetBranchAddress("ncount", &ncount);
       tree->SetBranchAddress("px", px);
       tree->SetBranchAddress("py", py);
       tree->SetBranchAddress("pz", pz);

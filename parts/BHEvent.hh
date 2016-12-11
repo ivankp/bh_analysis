@@ -45,7 +45,8 @@ public:
 
   enum select_t { all, kinematics, reweighting, cross_section };
 
-  void SetTree(TTree* tree, select_t branches=all, bool old=false);
+  void SetTree(TTree* tree, select_t branches=all,
+               bool old=false, bool has_ncount=false);
 
   void SetPart(Char_t part);
   void SetAlphasPower(Char_t n);
