@@ -288,7 +288,7 @@ int main(int argc, char** argv)
     tree->GetEntry(ent);
 
     if (event.nparticle>BHMAXNP) {
-      cerr << "More particles in the entry then BHMAXNP" << endl
+      cerr << "More particles in the entry than BHMAXNP" << endl
            << "Increase array length to " << event.nparticle << endl;
       exit(1);
     }
