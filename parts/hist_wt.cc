@@ -9,25 +9,34 @@ using namespace std;
 
 template<typename T> inline T sq(T x) { return x*x; }
 
-hist_wt::hist_wt(const string& name) {
-  if (name.size()) {
-    TH1* hist = css->mkhist(name);
-    keep_sumw2 = ( hist->GetSumw2N() > 0 );
-    for (auto& wt : weight::all) {
-      const weight *w = wt.get();
-      dirs[w]->cd();
-      auto &hw = h[w];
-      get<0>(hw) = static_cast<TH1*>( hist->Clone() );
-      if (keep_sumw2) {
-        const size_t n = hist->GetSumw2N();
-        Double_t *w = get<2>(hw) = new Double_t[n];
-        for (size_t i=0; i<n; ++i) w[i] = 0.;
-      }
-    }
-    delete hist;
+hist_wt::hist_wt(hist_wt&& o): h(std::move(o.h)), keep_sumw2(o.keep_sumw2) { }
+hist_wt& hist_wt::operator=(hist_wt&& o) {
+  h = std::move(o.h);
+  keep_sumw2 = o.keep_sumw2;
+  return *this;
+}
 
-    all.push_back(this); // add to the static vector
+hist_wt::hist_wt(const string& name) {
+  if (name.size()) init(name);
+}
+
+void hist_wt::init(const string& name) {
+  TH1* hist = css->mkhist(name);
+  keep_sumw2 = ( hist->GetSumw2N() > 0 );
+  for (auto& wt : weight::all) {
+    const weight *w = wt.get();
+    dirs[w]->cd();
+    auto &hw = h[w];
+    get<0>(hw) = static_cast<TH1*>( hist->Clone() );
+    if (keep_sumw2) {
+      const size_t n = hist->GetSumw2N();
+      Double_t *w = get<2>(hw) = new Double_t[n];
+      for (size_t i=0; i<n; ++i) w[i] = 0.;
+    }
   }
+  delete hist;
+
+  all.push_back(this); // add to the static vector
 }
 
 void hist_wt::Fill(Double_t x) noexcept {

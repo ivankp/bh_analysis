@@ -10,7 +10,7 @@
 #include <utility>
 #include <stdexcept>
 #include <memory>
-#include <algorithm>
+// #include <algorithm>
 
 #include <boost/program_options.hpp>
 
@@ -344,6 +344,30 @@ int main(int argc, char** argv)
   }
   cout << endl;
 
+  constexpr double xw = 0.05;
+  constexpr unsigned np = 3u;
+  constexpr unsigned nx = 10u;
+  const array<array<string,2>,np> pname {
+    "H","H", "jet1","1", "jet2","2"
+  };
+  array<array<array<hist_wt,nx>,np>,np> h_p_pT_xq;
+  // [pT's particle, p][x's particle, q][x bin]
+  for (auto& hp : h_p_pT_xq) {
+    static unsigned pi = 0, qi = 0, xi;
+    for (auto& hqp : hp) {
+      xi = 0;
+      for (auto& hxqp : hqp) {
+        hxqp.init(cat(
+          pname[pi%np][0],"_pT_x",
+          pname[qi%np][1],'_',xw*xi,'-',xw*(xi+1)
+        ) );
+        ++xi;
+      }
+      ++qi;
+    }
+    ++pi;
+  }
+
   h_(H_pT)
   h_(H_y)
   h_(H_eta)
@@ -581,8 +605,8 @@ int main(int argc, char** argv)
     H_phi = higgs.Phi();
 
     // Event HT with clustered jets
-    const double HT = std::accumulate( jets.begin(), jets.end(),
-      H_pT, [](double sum, const Jet& j){ return sum + j.pT; });
+    double HT = H_pT;
+    for (const auto& jet : jets) HT += jet.pT;
 
     // ****************************************************
     // Fill histograms ************************************
@@ -615,6 +639,32 @@ int main(int argc, char** argv)
         }
       }
 
+    }
+
+    // h_p_pT_xq [pT's particle, p][x's particle, q][x bin]
+    /*Higgs*/ {
+      const unsigned xH_bin = xH/xw;
+      if (xH_bin < nx) {
+        /*Higgs*/ h_p_pT_xq[0][0][xH_bin].Fill(H_pT);
+        if (nj>0) h_p_pT_xq[1][0][xH_bin].Fill(jets[0].pT);
+        if (nj>1) h_p_pT_xq[2][0][xH_bin].Fill(jets[1].pT);
+      }
+    }
+    if (nj>0) {
+      const unsigned x1_bin = x1/xw;
+      if (x1_bin < nx) {
+        /*Higgs*/ h_p_pT_xq[0][1][x1_bin].Fill(H_pT);
+        /*jet 1*/ h_p_pT_xq[1][1][x1_bin].Fill(jets[0].pT);
+        if (nj>1) h_p_pT_xq[2][1][x1_bin].Fill(jets[1].pT);
+      }
+    }
+    if (nj>1) {
+      const unsigned x2_bin = x2/xw;
+      if (x2_bin < nx) {
+        /*Higgs*/ h_p_pT_xq[0][2][x2_bin].Fill(H_pT);
+        /*jet 1*/ h_p_pT_xq[1][2][x2_bin].Fill(jets[0].pT);
+        /*jet 2*/ h_p_pT_xq[2][2][x2_bin].Fill(jets[1].pT);
+      }
     }
 
     // Higgs

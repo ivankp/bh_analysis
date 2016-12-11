@@ -22,7 +22,15 @@ class hist_wt {
     std::tuple< TH1*, std::unordered_map<Int_t,Double_t>, Double_t* >> h;
   bool keep_sumw2;
 public:
+  hist_wt() = default;
   hist_wt(const std::string& name);
+  hist_wt(const hist_wt&) = delete;
+  hist_wt& operator=(const hist_wt&) = delete;
+  hist_wt(hist_wt&& o);
+  hist_wt& operator=(hist_wt&& o);
+
+  void init(const std::string& name);
+
   void Fill(Double_t x) noexcept;
   void FillIncl(Double_t x) noexcept;
   void FillSumw2() noexcept;
