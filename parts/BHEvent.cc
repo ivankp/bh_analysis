@@ -20,6 +20,7 @@ void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
 
       ActivateBranch(tree, "id", &eid);
       ActivateBranch(tree, "nparticle", &nparticle);
+      ActivateBranch(tree, "ncount", &ncount);
       ActivateBranch(tree, "px", px);
       ActivateBranch(tree, "py", py);
       ActivateBranch(tree, "pz", pz);
@@ -58,6 +59,7 @@ void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
     case cross_section: {
 
       ActivateBranch(tree, "id", &eid);
+      ActivateBranch(tree, "ncount", &ncount);
       ActivateBranch(tree, "weight2", &weight2);
 
     } break;
@@ -65,6 +67,7 @@ void BHEvent::SetTree(TTree* tree, select_t branches, bool old) {
 
       tree->SetBranchAddress("id", &eid);
       tree->SetBranchAddress("nparticle", &nparticle);
+      tree->SetBranchAddress("ncount", &ncount);
       tree->SetBranchAddress("px", px);
       tree->SetBranchAddress("py", py);
       tree->SetBranchAddress("pz", pz);

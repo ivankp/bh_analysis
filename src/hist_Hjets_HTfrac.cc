@@ -54,6 +54,8 @@ inline bool between(T a, T x, T b) noexcept {
   return ( (a<=x) && (x<=b) );
 }
 
+// BHEvent *event_ptr = nullptr;
+
 // ******************************************************************
 struct Jet {
   TLorentzVector p;
@@ -197,6 +199,7 @@ int main(int argc, char** argv)
 
   // BlackHat tree branches
   BHEvent event;
+  // event_ptr = &event;
   event.SetTree(bh_tree, BHEvent::kinematics);
 
   // Jet Clustering Algorithm
@@ -323,16 +326,21 @@ int main(int argc, char** argv)
 
   const double HT_bin_width = 100.; // GeV
   const unsigned n_HT_bins = 10;
-  vector<hist_wt> h_xH, h_x1, h_x2;
-  h_xH.reserve(n_HT_bins);
-  h_x1.reserve(n_HT_bins);
-  h_x2.reserve(n_HT_bins);
+  array<vector<hist_wt>,3> h_xH, h_x1, h_x2;
+  for (unsigned j=0; j<h_xH.size(); ++j) {
+    h_xH[j].reserve(n_HT_bins);
+    h_x1[j].reserve(n_HT_bins);
+    h_x2[j].reserve(n_HT_bins);
+  }
   for (unsigned i=0; i<n_HT_bins; ++i) {
-    const auto range = cat(HT_bin_width*i,'-',HT_bin_width*(i+1));
+    auto range = cat(HT_bin_width*i,'-',HT_bin_width*(i+1));
     cout << ' ' << range;
-    h_xH.emplace_back("xH_HT_"+range);
-    h_x1.emplace_back("x1_HT_"+range);
-    h_x2.emplace_back("x2_HT_"+range);
+    for (unsigned j=0; j<h_xH.size(); ++j) {
+      const auto suffix = range + cat("_dycut_",j);
+      h_xH[j].emplace_back("xH_HT_"+suffix);
+      h_x1[j].emplace_back("x1_HT_"+suffix);
+      h_x2[j].emplace_back("x2_HT_"+suffix);
+    }
   }
   cout << endl;
 
@@ -424,7 +432,7 @@ int main(int argc, char** argv)
 
     // Count number of events (not entries)
     if (prev_id!=event.eid) {
-      h_N->Fill(0.5);
+      h_N->Fill(0.5,event.ncount);
       prev_id = event.eid;
       ++num_events;
 
@@ -582,15 +590,31 @@ int main(int argc, char** argv)
     h_HT.Fill(HT);
 
     const unsigned HT_bin = HT/HT_bin_width;
+    const double xH = H_pT/HT;
+    const double x1 = jets[0].pT/HT;
+    const double x2 = jets[1].pT/HT;
 
     if (HT_bin < n_HT_bins) {
-      h_xH[HT_bin].Fill(H_pT/HT);
-      if (nj > 0) {
-        h_x1[HT_bin].Fill(jets[0].pT/HT);
-        if (nj > 1) {
-          h_x2[HT_bin].Fill(jets[1].pT/HT);
+
+      // Find maximum dy of jets and Higgs
+      const auto max_dy = std::max({
+        abs(H_y-jets[0].y),
+        abs(H_y-jets[1].y),
+        abs(jets[0].y-jets[1].y)
+      });
+
+      for (unsigned i=0; i<3; ++i) {
+        if (i && max_dy>=i) break;
+
+        h_xH[i][HT_bin].Fill(xH);
+        if (nj > 0) {
+          h_x1[i][HT_bin].Fill(x1);
+          if (nj > 1) {
+            h_x2[i][HT_bin].Fill(x2);
+          }
         }
       }
+
     }
 
     // Higgs

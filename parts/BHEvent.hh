@@ -1,7 +1,7 @@
 #ifndef BHEvent_h
 #define BHEvent_h
 
-#define BHMAXNP 10 // maximum number of partons
+#define BHMAXNP 6 // maximum number of partons
 
 #include <Rtypes.h>
 
@@ -12,10 +12,12 @@ class BHEvent {
   TTree *tree;
 
 public:
-  using p4_t = Float_t;
+  // using p4_t = Float_t;
+  using p4_t = Double_t;
 
   Int_t           eid;
   Int_t           nparticle;
+  Int_t           ncount;
   p4_t            px[BHMAXNP]; //[nparticle]
   p4_t            py[BHMAXNP]; //[nparticle]
   p4_t            pz[BHMAXNP]; //[nparticle]
@@ -49,5 +51,7 @@ public:
   void SetAlphasPower(Char_t n);
 
 };
+
+// extern BHEvent *event_ptr;
 
 #endif

@@ -19,10 +19,10 @@ private:
     Float_t f;
   } w;
   bool is_float;
-  
+
 public:
   weight(TTree *tree, const std::string& name, bool is_float=true);
-  
+
   inline Double_t get() const noexcept {
     return (is_float ? w.f : w.d);
   }

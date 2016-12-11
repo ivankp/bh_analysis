@@ -41,13 +41,13 @@ void hist_wt::Fill(Double_t x) noexcept {
     if (keep_sumw2)
       get<1>(_h.second).emplace(bin,0.).first->second += w;
 
-    hist->Fill(x,w);
+    hist->Fill(x,w/**event_ptr->ncount*/);
   }
 }
 
 void hist_wt::FillIncl(Double_t x) noexcept {
   const TH1* hist = get<0>(h.cbegin()->second);
-  
+
   for (Int_t i=1, n=hist->FindFixBin(x); i<=n; ++i)
     Fill(hist->GetBinCenter(i));
 }

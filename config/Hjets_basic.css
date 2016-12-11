@@ -72,7 +72,7 @@ AA_cos_theta_star(?:_.*)? {
   Bins: 25 0 1;
 }
 
-x[H12]_HT_\d+-\d+ {
+x[H12]_HT.* {
   Bins: 100 0 1;
 }
 

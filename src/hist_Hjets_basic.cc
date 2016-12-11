@@ -55,6 +55,8 @@ inline bool between(T a, T x, T b) noexcept {
   return ( (a<=x) && (x<=b) );
 }
 
+// BHEvent *event_ptr = nullptr;
+
 // ******************************************************************
 struct Jet {
   TLorentzVector p;
@@ -198,6 +200,7 @@ int main(int argc, char** argv)
 
   // BlackHat tree branches
   BHEvent event;
+  // event_ptr = &event;
   event.SetTree(bh_tree, BHEvent::kinematics);
 
   // Jet Clustering Algorithm
@@ -408,7 +411,7 @@ int main(int argc, char** argv)
 
     // Count number of events (not entries)
     if (prev_id!=event.eid) {
-      h_N->Fill(0.5);
+      h_N->Fill(0.5,event.ncount);
       prev_id = event.eid;
       ++num_events;
 
