@@ -5,7 +5,8 @@
 
 #include <TTree.h>
 
-inline void ActivateBranch(TTree* tree, const char* name, void* addr) noexcept {
+template <typename T>
+inline void ActivateBranch(TTree* tree, const char* name, T* addr) noexcept {
   tree->SetBranchStatus (name, true);
   tree->SetBranchAddress(name, addr);
 }

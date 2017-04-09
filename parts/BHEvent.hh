@@ -12,8 +12,8 @@ class BHEvent {
   TTree *tree;
 
 public:
-  // using p4_t = Float_t;
-  using p4_t = Double_t;
+  using p4_t = Float_t;
+  // using p4_t = Double_t;
 
   Int_t           eid;
   Int_t           nparticle;
@@ -35,8 +35,11 @@ public:
   Double_t        ren_scale;
   Int_t           nuwgt;
   Double_t        usr_wgts[18]; //[nuwgt]
-  Char_t          alphas_power;
+  // Char_t          alphas_power;
+  Short_t         alphas_power;
   Char_t          part[2];
+
+  Long64_t        ent;
 
   Double_t Ht() const noexcept;
   Double_t Ht_Higgs() const noexcept;
