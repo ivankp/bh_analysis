@@ -35,8 +35,8 @@ public:
   Double_t        ren_scale;
   Int_t           nuwgt;
   Double_t        usr_wgts[18]; //[nuwgt]
-  // Char_t          alphas_power;
-  Short_t         alphas_power;
+  Char_t          alphas_power;
+  // Short_t         alphas_power;
   Char_t          part[2];
 
   Long64_t        ent;

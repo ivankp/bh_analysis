@@ -1,0 +1,57 @@
+<!-- Input BlackHat ntuple properties -->
+<!--
+  alphas="" or omitted: all powers of \alpha_{s} at the same chosen scale
+  alphas="two_mH": two powers of \alpha_{s} at mass of Higgs, the rest at a chosen scale
+-->
+<bh_format alphas="" />
+
+<!-- Definitions of energies of the scales -->
+<!--
+  Ht = \sum_i^{all} p_{T,i}
+    Example: <Ht name="Ht2" frac="0.5" />
+  Ht_Higgs = \sqrt{m_H^2 + p_{T,H}^2} + \sum_i^{partons} p_{T,i}
+    Example: <Ht_Higgs name="Ht2" frac="0.5" />
+  fixed = energy in GeV
+    Example: <fixed name="mH" val="125" />
+  fac_default = original ntuple factorization scale
+    Example: <fac_default name="fac_def" />
+  ren_default = original ntuple renormalization scale
+    Example: <ren_default name="ren_def" />
+-->
+<energies>
+  <!-- <Ht_Higgs name="Ht"  frac="1."   /> -->
+  <!-- <Ht_Higgs name="Ht2" frac="0.5"  /> -->
+  <!-- <Ht_Higgs name="Ht4" frac="0.25" /> -->
+  <fixed name="daniel" val="66.3463" />
+</energies>
+
+<!-- Definitions of factorization and renormalization scales computation parts -->
+<!--
+  By default, pdf uncertainties are not calculated.
+  If the option is turned on, two editional weight (up and down) are computed.
+-->
+<scales>
+  <!-- <fac name="Ht"  energy="Ht"  /> -->
+  <fac name="Ht2" energy="daniel" />
+  <!-- <fac name="Ht4" energy="Ht4" /> -->
+  <!--  -->
+  <!-- <ren name="Ht"  energy="Ht"  /> -->
+  <ren name="Ht2" energy="daniel" />
+  <!-- <ren name="Ht4" energy="Ht4" /> -->
+</scales>
+
+<!-- Definitions of weights -->
+<!--
+  The pdfunc has to be specified here again.
+  This way PDF uncertainty variations don't have to be written
+  for weights other then central
+-->
+<weights>
+  <weight fac="Ht2" ren="Ht2" />
+  <!-- <weight fac="Ht2" ren="Ht"  /> -->
+  <!-- <weight fac="Ht2" ren="Ht4" /> -->
+  <!-- <weight fac="Ht4" ren="Ht2" /> -->
+  <!-- <weight fac="Ht4" ren="Ht4" /> -->
+  <!-- <weight fac="Ht"  ren="Ht"  /> -->
+  <!-- <weight fac="Ht"  ren="Ht2" /> -->
+</weights>

@@ -9,6 +9,9 @@
 #include "LHAPDF/LHAPDF.h"
 #include "LHAPDF/PDFSet.h"
 
+#define test(var) \
+  std::cout <<"\033[36m"<< #var <<"\033[0m"<< " = " << var << std::endl;
+
 #define debug
 
 using namespace std;
@@ -282,6 +285,8 @@ void reweighter::stitch() const noexcept {
     if (part=='I') s[k] += fac->si[k];
 
     weight[k] = s[k] * ren->ar;
+
+    test( weight[0] )
 
     if (!isfinite(weight[k]))  {
       cerr << "\033[31mEntry " << event.eid << "\033[0m: "

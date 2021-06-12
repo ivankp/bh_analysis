@@ -29,11 +29,11 @@
   <Ht_Higgs name="0.30Ht" frac="0.30" />
   <Ht_Higgs name="0.40Ht" frac="0.40" />
   <Ht_Higgs name="0.50Ht" frac="0.50" />
-  <Ht_Higgs name="0.60Ht" frac="0.60" />
-  <Ht_Higgs name="0.75Ht" frac="0.75" />
-  <Ht_Higgs name="1.00Ht" frac="1.00" />
-  <Ht_Higgs name="1.50Ht" frac="1.50" />
-  <Ht_Higgs name="2.00Ht" frac="2.00" />
+  <!-- <Ht_Higgs name="0.60Ht" frac="0.60" /> -->
+  <!-- <Ht_Higgs name="0.75Ht" frac="0.75" /> -->
+  <!-- <Ht_Higgs name="1.00Ht" frac="1.00" /> -->
+  <!-- <Ht_Higgs name="1.50Ht" frac="1.50" /> -->
+  <!-- <Ht_Higgs name="2.00Ht" frac="2.00" /> -->
 </energies>
 
 <!-- Definitions of factorization and renormalization scales computation parts -->
@@ -48,31 +48,31 @@
   <fac name="0.12Ht" energy="0.12Ht" />
   <fac name="0.15Ht" energy="0.15Ht" />
   <fac name="0.20Ht" energy="0.20Ht" />
-  <fac name="0.25Ht" energy="0.25Ht" />
-  <fac name="0.30Ht" energy="0.30Ht" />
-  <fac name="0.40Ht" energy="0.40Ht" />
-  <fac name="0.50Ht" energy="0.50Ht" />
-  <fac name="0.60Ht" energy="0.60Ht" />
-  <fac name="0.75Ht" energy="0.75Ht" />
-  <fac name="1.00Ht" energy="1.00Ht" />
-  <fac name="1.50Ht" energy="1.50Ht" />
-  <fac name="2.00Ht" energy="2.00Ht" />
+  <!-- <fac name="0.25Ht" energy="0.25Ht" /> -->
+  <!-- <fac name="0.30Ht" energy="0.30Ht" /> -->
+  <!-- <fac name="0.40Ht" energy="0.40Ht" /> -->
+  <!-- <fac name="0.50Ht" energy="0.50Ht" /> -->
+  <!-- <fac name="0.60Ht" energy="0.60Ht" /> -->
+  <!-- <fac name="0.75Ht" energy="0.75Ht" /> -->
+  <!-- <fac name="1.00Ht" energy="1.00Ht" /> -->
+  <!-- <fac name="1.50Ht" energy="1.50Ht" /> -->
+  <!-- <fac name="2.00Ht" energy="2.00Ht" /> -->
 
-  <ren name="0.05Ht" energy="0.05Ht" />
-  <ren name="0.07Ht" energy="0.07Ht" />
-  <ren name="0.10Ht" energy="0.10Ht" />
-  <ren name="0.12Ht" energy="0.12Ht" />
-  <ren name="0.15Ht" energy="0.15Ht" />
+  <!-- <ren name="0.05Ht" energy="0.05Ht" /> -->
+  <!-- <ren name="0.07Ht" energy="0.07Ht" /> -->
+  <!-- <ren name="0.10Ht" energy="0.10Ht" /> -->
+  <!-- <ren name="0.12Ht" energy="0.12Ht" /> -->
+  <!-- <ren name="0.15Ht" energy="0.15Ht" /> -->
   <ren name="0.20Ht" energy="0.20Ht" />
   <ren name="0.25Ht" energy="0.25Ht" />
   <ren name="0.30Ht" energy="0.30Ht" />
   <ren name="0.40Ht" energy="0.40Ht" />
   <ren name="0.50Ht" energy="0.50Ht" />
-  <ren name="0.60Ht" energy="0.60Ht" />
-  <ren name="0.75Ht" energy="0.75Ht" />
-  <ren name="1.00Ht" energy="1.00Ht" />
-  <ren name="1.50Ht" energy="1.50Ht" />
-  <ren name="2.00Ht" energy="2.00Ht" />
+  <!-- <ren name="0.60Ht" energy="0.60Ht" /> -->
+  <!-- <ren name="0.75Ht" energy="0.75Ht" /> -->
+  <!-- <ren name="1.00Ht" energy="1.00Ht" /> -->
+  <!-- <ren name="1.50Ht" energy="1.50Ht" /> -->
+  <!-- <ren name="2.00Ht" energy="2.00Ht" /> -->
 </scales>
 
 <!-- Definitions of weights -->
@@ -82,243 +82,43 @@
   for weights other then central
 -->
 <weights>
-  <weight fac="0.05Ht" ren="0.05Ht" />
-  <weight fac="0.05Ht" ren="0.07Ht" />
-  <weight fac="0.05Ht" ren="0.10Ht" />
-  <weight fac="0.05Ht" ren="0.12Ht" />
-  <weight fac="0.05Ht" ren="0.15Ht" />
+  <!-- <weight fac="0.50Ht" ren="0.20Ht" /> -->
+  <!-- <weight fac="0.50Ht" ren="0.30Ht" /> -->
+  <!-- <weight fac="0.50Ht" ren="0.50Ht" /> -->
+
   <weight fac="0.05Ht" ren="0.20Ht" />
   <weight fac="0.05Ht" ren="0.25Ht" />
   <weight fac="0.05Ht" ren="0.30Ht" />
   <weight fac="0.05Ht" ren="0.40Ht" />
   <weight fac="0.05Ht" ren="0.50Ht" />
-  <weight fac="0.05Ht" ren="0.60Ht" />
-  <weight fac="0.05Ht" ren="0.75Ht" />
-  <weight fac="0.05Ht" ren="1.00Ht" />
-  <weight fac="0.05Ht" ren="1.50Ht" />
-  <weight fac="0.05Ht" ren="2.00Ht" />
 
-  <weight fac="0.07Ht" ren="0.05Ht" />
-  <weight fac="0.07Ht" ren="0.07Ht" />
-  <weight fac="0.07Ht" ren="0.10Ht" />
-  <weight fac="0.07Ht" ren="0.12Ht" />
-  <weight fac="0.07Ht" ren="0.15Ht" />
   <weight fac="0.07Ht" ren="0.20Ht" />
   <weight fac="0.07Ht" ren="0.25Ht" />
   <weight fac="0.07Ht" ren="0.30Ht" />
   <weight fac="0.07Ht" ren="0.40Ht" />
   <weight fac="0.07Ht" ren="0.50Ht" />
-  <weight fac="0.07Ht" ren="0.60Ht" />
-  <weight fac="0.07Ht" ren="0.75Ht" />
-  <weight fac="0.07Ht" ren="1.00Ht" />
-  <weight fac="0.07Ht" ren="1.50Ht" />
-  <weight fac="0.07Ht" ren="2.00Ht" />
 
-  <weight fac="0.10Ht" ren="0.05Ht" />
-  <weight fac="0.10Ht" ren="0.07Ht" />
-  <weight fac="0.10Ht" ren="0.10Ht" />
-  <weight fac="0.10Ht" ren="0.12Ht" />
-  <weight fac="0.10Ht" ren="0.15Ht" />
   <weight fac="0.10Ht" ren="0.20Ht" />
   <weight fac="0.10Ht" ren="0.25Ht" />
   <weight fac="0.10Ht" ren="0.30Ht" />
   <weight fac="0.10Ht" ren="0.40Ht" />
   <weight fac="0.10Ht" ren="0.50Ht" />
-  <weight fac="0.10Ht" ren="0.60Ht" />
-  <weight fac="0.10Ht" ren="0.75Ht" />
-  <weight fac="0.10Ht" ren="1.00Ht" />
-  <weight fac="0.10Ht" ren="1.50Ht" />
-  <weight fac="0.10Ht" ren="2.00Ht" />
 
-  <weight fac="0.12Ht" ren="0.05Ht" />
-  <weight fac="0.12Ht" ren="0.07Ht" />
-  <weight fac="0.12Ht" ren="0.10Ht" />
-  <weight fac="0.12Ht" ren="0.12Ht" />
-  <weight fac="0.12Ht" ren="0.15Ht" />
   <weight fac="0.12Ht" ren="0.20Ht" />
   <weight fac="0.12Ht" ren="0.25Ht" />
   <weight fac="0.12Ht" ren="0.30Ht" />
   <weight fac="0.12Ht" ren="0.40Ht" />
   <weight fac="0.12Ht" ren="0.50Ht" />
-  <weight fac="0.12Ht" ren="0.60Ht" />
-  <weight fac="0.12Ht" ren="0.75Ht" />
-  <weight fac="0.12Ht" ren="1.00Ht" />
-  <weight fac="0.12Ht" ren="1.50Ht" />
-  <weight fac="0.12Ht" ren="2.00Ht" />
 
-  <weight fac="0.15Ht" ren="0.05Ht" />
-  <weight fac="0.15Ht" ren="0.07Ht" />
-  <weight fac="0.15Ht" ren="0.10Ht" />
-  <weight fac="0.15Ht" ren="0.12Ht" />
-  <weight fac="0.15Ht" ren="0.15Ht" />
   <weight fac="0.15Ht" ren="0.20Ht" />
   <weight fac="0.15Ht" ren="0.25Ht" />
   <weight fac="0.15Ht" ren="0.30Ht" />
   <weight fac="0.15Ht" ren="0.40Ht" />
   <weight fac="0.15Ht" ren="0.50Ht" />
-  <weight fac="0.15Ht" ren="0.60Ht" />
-  <weight fac="0.15Ht" ren="0.75Ht" />
-  <weight fac="0.15Ht" ren="1.00Ht" />
-  <weight fac="0.15Ht" ren="1.50Ht" />
-  <weight fac="0.15Ht" ren="2.00Ht" />
 
-  <weight fac="0.20Ht" ren="0.05Ht" />
-  <weight fac="0.20Ht" ren="0.07Ht" />
-  <weight fac="0.20Ht" ren="0.10Ht" />
-  <weight fac="0.20Ht" ren="0.12Ht" />
-  <weight fac="0.20Ht" ren="0.15Ht" />
   <weight fac="0.20Ht" ren="0.20Ht" />
   <weight fac="0.20Ht" ren="0.25Ht" />
   <weight fac="0.20Ht" ren="0.30Ht" />
   <weight fac="0.20Ht" ren="0.40Ht" />
   <weight fac="0.20Ht" ren="0.50Ht" />
-  <weight fac="0.20Ht" ren="0.60Ht" />
-  <weight fac="0.20Ht" ren="0.75Ht" />
-  <weight fac="0.20Ht" ren="1.00Ht" />
-  <weight fac="0.20Ht" ren="1.50Ht" />
-  <weight fac="0.20Ht" ren="2.00Ht" />
-
-  <weight fac="0.25Ht" ren="0.05Ht" />
-  <weight fac="0.25Ht" ren="0.07Ht" />
-  <weight fac="0.25Ht" ren="0.10Ht" />
-  <weight fac="0.25Ht" ren="0.12Ht" />
-  <weight fac="0.25Ht" ren="0.15Ht" />
-  <weight fac="0.25Ht" ren="0.20Ht" />
-  <weight fac="0.25Ht" ren="0.25Ht" />
-  <weight fac="0.25Ht" ren="0.30Ht" />
-  <weight fac="0.25Ht" ren="0.40Ht" />
-  <weight fac="0.25Ht" ren="0.50Ht" />
-  <weight fac="0.25Ht" ren="0.60Ht" />
-  <weight fac="0.25Ht" ren="0.75Ht" />
-  <weight fac="0.25Ht" ren="1.00Ht" />
-  <weight fac="0.25Ht" ren="1.50Ht" />
-  <weight fac="0.25Ht" ren="2.00Ht" />
-
-  <weight fac="0.30Ht" ren="0.05Ht" />
-  <weight fac="0.30Ht" ren="0.07Ht" />
-  <weight fac="0.30Ht" ren="0.10Ht" />
-  <weight fac="0.30Ht" ren="0.12Ht" />
-  <weight fac="0.30Ht" ren="0.15Ht" />
-  <weight fac="0.30Ht" ren="0.20Ht" />
-  <weight fac="0.30Ht" ren="0.25Ht" />
-  <weight fac="0.30Ht" ren="0.30Ht" />
-  <weight fac="0.30Ht" ren="0.40Ht" />
-  <weight fac="0.30Ht" ren="0.50Ht" />
-  <weight fac="0.30Ht" ren="0.60Ht" />
-  <weight fac="0.30Ht" ren="0.75Ht" />
-  <weight fac="0.30Ht" ren="1.00Ht" />
-  <weight fac="0.30Ht" ren="1.50Ht" />
-  <weight fac="0.30Ht" ren="2.00Ht" />
-
-  <weight fac="0.40Ht" ren="0.05Ht" />
-  <weight fac="0.40Ht" ren="0.07Ht" />
-  <weight fac="0.40Ht" ren="0.10Ht" />
-  <weight fac="0.40Ht" ren="0.12Ht" />
-  <weight fac="0.40Ht" ren="0.15Ht" />
-  <weight fac="0.40Ht" ren="0.20Ht" />
-  <weight fac="0.40Ht" ren="0.25Ht" />
-  <weight fac="0.40Ht" ren="0.30Ht" />
-  <weight fac="0.40Ht" ren="0.40Ht" />
-  <weight fac="0.40Ht" ren="0.50Ht" />
-  <weight fac="0.40Ht" ren="0.60Ht" />
-  <weight fac="0.40Ht" ren="0.75Ht" />
-  <weight fac="0.40Ht" ren="1.00Ht" />
-  <weight fac="0.40Ht" ren="1.50Ht" />
-  <weight fac="0.40Ht" ren="2.00Ht" />
-
-  <weight fac="0.50Ht" ren="0.05Ht" />
-  <weight fac="0.50Ht" ren="0.07Ht" />
-  <weight fac="0.50Ht" ren="0.10Ht" />
-  <weight fac="0.50Ht" ren="0.12Ht" />
-  <weight fac="0.50Ht" ren="0.15Ht" />
-  <weight fac="0.50Ht" ren="0.20Ht" />
-  <weight fac="0.50Ht" ren="0.25Ht" />
-  <weight fac="0.50Ht" ren="0.30Ht" />
-  <weight fac="0.50Ht" ren="0.40Ht" />
-  <weight fac="0.50Ht" ren="0.50Ht" />
-  <weight fac="0.50Ht" ren="0.60Ht" />
-  <weight fac="0.50Ht" ren="0.75Ht" />
-  <weight fac="0.50Ht" ren="1.00Ht" />
-  <weight fac="0.50Ht" ren="1.50Ht" />
-  <weight fac="0.50Ht" ren="2.00Ht" />
-
-  <weight fac="0.60Ht" ren="0.05Ht" />
-  <weight fac="0.60Ht" ren="0.07Ht" />
-  <weight fac="0.60Ht" ren="0.10Ht" />
-  <weight fac="0.60Ht" ren="0.12Ht" />
-  <weight fac="0.60Ht" ren="0.15Ht" />
-  <weight fac="0.60Ht" ren="0.20Ht" />
-  <weight fac="0.60Ht" ren="0.25Ht" />
-  <weight fac="0.60Ht" ren="0.30Ht" />
-  <weight fac="0.60Ht" ren="0.40Ht" />
-  <weight fac="0.60Ht" ren="0.50Ht" />
-  <weight fac="0.60Ht" ren="0.60Ht" />
-  <weight fac="0.60Ht" ren="0.75Ht" />
-  <weight fac="0.60Ht" ren="1.00Ht" />
-  <weight fac="0.60Ht" ren="1.50Ht" />
-  <weight fac="0.60Ht" ren="2.00Ht" />
-
-  <weight fac="0.75Ht" ren="0.05Ht" />
-  <weight fac="0.75Ht" ren="0.07Ht" />
-  <weight fac="0.75Ht" ren="0.10Ht" />
-  <weight fac="0.75Ht" ren="0.12Ht" />
-  <weight fac="0.75Ht" ren="0.15Ht" />
-  <weight fac="0.75Ht" ren="0.20Ht" />
-  <weight fac="0.75Ht" ren="0.25Ht" />
-  <weight fac="0.75Ht" ren="0.30Ht" />
-  <weight fac="0.75Ht" ren="0.40Ht" />
-  <weight fac="0.75Ht" ren="0.50Ht" />
-  <weight fac="0.75Ht" ren="0.60Ht" />
-  <weight fac="0.75Ht" ren="0.75Ht" />
-  <weight fac="0.75Ht" ren="1.00Ht" />
-  <weight fac="0.75Ht" ren="1.50Ht" />
-  <weight fac="0.75Ht" ren="2.00Ht" />
-
-  <weight fac="1.00Ht" ren="0.05Ht" />
-  <weight fac="1.00Ht" ren="0.07Ht" />
-  <weight fac="1.00Ht" ren="0.10Ht" />
-  <weight fac="1.00Ht" ren="0.12Ht" />
-  <weight fac="1.00Ht" ren="0.15Ht" />
-  <weight fac="1.00Ht" ren="0.20Ht" />
-  <weight fac="1.00Ht" ren="0.25Ht" />
-  <weight fac="1.00Ht" ren="0.30Ht" />
-  <weight fac="1.00Ht" ren="0.40Ht" />
-  <weight fac="1.00Ht" ren="0.50Ht" />
-  <weight fac="1.00Ht" ren="0.60Ht" />
-  <weight fac="1.00Ht" ren="0.75Ht" />
-  <weight fac="1.00Ht" ren="1.00Ht" />
-  <weight fac="1.00Ht" ren="1.50Ht" />
-  <weight fac="1.00Ht" ren="2.00Ht" />
-
-  <weight fac="1.50Ht" ren="0.05Ht" />
-  <weight fac="1.50Ht" ren="0.07Ht" />
-  <weight fac="1.50Ht" ren="0.10Ht" />
-  <weight fac="1.50Ht" ren="0.12Ht" />
-  <weight fac="1.50Ht" ren="0.15Ht" />
-  <weight fac="1.50Ht" ren="0.20Ht" />
-  <weight fac="1.50Ht" ren="0.25Ht" />
-  <weight fac="1.50Ht" ren="0.30Ht" />
-  <weight fac="1.50Ht" ren="0.40Ht" />
-  <weight fac="1.50Ht" ren="0.50Ht" />
-  <weight fac="1.50Ht" ren="0.60Ht" />
-  <weight fac="1.50Ht" ren="0.75Ht" />
-  <weight fac="1.50Ht" ren="1.00Ht" />
-  <weight fac="1.50Ht" ren="1.50Ht" />
-  <weight fac="1.50Ht" ren="2.00Ht" />
-
-  <weight fac="2.00Ht" ren="0.05Ht" />
-  <weight fac="2.00Ht" ren="0.07Ht" />
-  <weight fac="2.00Ht" ren="0.10Ht" />
-  <weight fac="2.00Ht" ren="0.12Ht" />
-  <weight fac="2.00Ht" ren="0.15Ht" />
-  <weight fac="2.00Ht" ren="0.20Ht" />
-  <weight fac="2.00Ht" ren="0.25Ht" />
-  <weight fac="2.00Ht" ren="0.30Ht" />
-  <weight fac="2.00Ht" ren="0.40Ht" />
-  <weight fac="2.00Ht" ren="0.50Ht" />
-  <weight fac="2.00Ht" ren="0.60Ht" />
-  <weight fac="2.00Ht" ren="0.75Ht" />
-  <weight fac="2.00Ht" ren="1.00Ht" />
-  <weight fac="2.00Ht" ren="1.50Ht" />
-  <weight fac="2.00Ht" ren="2.00Ht" />
 </weights>

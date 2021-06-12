@@ -304,8 +304,8 @@ int main(int argc, char** argv)
   timed_counter counter(counter_newline);
   num_ent.second += num_ent.first;
 
-  cout << scientific;
-  cout.precision(10);
+  // cout << scientific;
+  // cout.precision(10);
 
   for (Long64_t ent=num_ent.first; ent<num_ent.second; ++ent) {
     counter(ent);
@@ -321,6 +321,8 @@ int main(int argc, char** argv)
     for (unsigned i=0; i<18; ++i)
       if (!isfinite(event.usr_wgts[i])) throw runtime_fail(
         "!isfinite usr_wgts[",i,"] in ent ",ent,": ",event.usr_wgts[i]);*/
+
+    cout << endl;
 
     // REWEIGHTING
     for (auto& f : fac) f.second->calc();
